@@ -1191,16 +1191,14 @@ async function analyzeExistingClips(user){
 
   addLog('Found '+clips.length+' existing clips — scoring with AI...','ok');
 
-  var prompt='You are an expert Twitch clip analyst. Analyze these existing Twitch clips and rank the best ones for reposting.
-
-Channel: '+user.display_name+'
-Existing clips:
-'+JSON.stringify(clips.map(function(c){return {title:c.title,views:c.view_count,duration:c.duration,game:c.game_name,created:c.created_at};}),null,2)+'
-
-Rank the top 5 clips for viral/repost potential. For each, suggest an improved title and caption strategy.
-
-Respond ONLY with valid JSON:
-{"summary":"2-3 sentence channel analysis","clips":[{"type":"hype|funny|info|rage","score":92,"timestamp":"0:00","duration":"'+clips[0].duration+'","title":"Improved punchy title","tags":["TAG1","TAG2"],"bg":"purple|teal|orange|blue","chat_intensity":85,"original_url":"'+clips[0].url+'","clip_id":"'+clips[0].id+'"}]}';
+  var clipsData=JSON.stringify(clips.map(function(c){return {title:c.title,views:c.view_count,duration:c.duration,game:c.game_name};}));
+  var exampleDur=clips[0]?clips[0].duration:'30';
+  var exampleUrl=clips[0]?clips[0].url:'';
+  var exampleId=clips[0]?clips[0].id:'';
+  var prompt='You are an expert Twitch clip analyst. Analyze these existing Twitch clips and rank the best ones for reposting.'+
+    ' Channel: '+user.display_name+'. Existing clips: '+clipsData+
+    ' Rank the top 5 clips for viral/repost potential. Suggest an improved title and caption for each.'+
+    ' Respond ONLY with valid JSON: {"summary":"2-3 sentence channel analysis","clips":[{"type":"hype|funny|info|rage","score":92,"timestamp":"0:00","duration":"'+exampleDur+'","title":"Improved punchy title","tags":["TAG1","TAG2"],"bg":"purple|teal|orange|blue","chat_intensity":85,"original_url":"'+exampleUrl+'","clip_id":"'+exampleId+'"}]}';
 
   var r=await fetch('https://twitch-proxy.igregg96.workers.dev/claude',{
     method:'POST',headers:{'Content-Type':'application/json'},
@@ -1221,7 +1219,8 @@ Respond ONLY with valid JSON:
     });
   });
 
-  var fakeVod={id:user.id,user_id:user.id,user_name:user.display_name,title:user.display_name+"'s Top Clips",game_name:'Various',duration:clips.length+'  clips analyzed',view_count:clips.reduce(function(a,c){return a+c.view_count;},0),isClipsMode:true};
+  var totalViews=clips.reduce(function(a,c){return a+c.view_count;},0);
+  var fakeVod={id:user.id,user_id:user.id,user_name:user.display_name,title:user.display_name+' Top Clips',game_name:'Various',duration:clips.length+' clips',view_count:totalViews,isClipsMode:true};
   currentVodData=fakeVod;
 
   var durSec=3600;
@@ -1244,16 +1243,11 @@ Respond ONLY with valid JSON:
 }
 
 async function callClaudeLive(user, stream){
-  var prompt='You are an expert Twitch clip analyst. A streamer is currently LIVE. Suggest 5 ideal clip moments to create RIGHT NOW based on stream context.
-
-Stream: "'+stream.title+'" by '+user.display_name+'
-Game: '+(stream.game_name||'Unknown')+'
-Viewers: '+stream.viewer_count+'
-
-Suggest 5 clip types that would perform well for this kind of stream. These will be created as live clips.
-
-Respond ONLY with valid JSON:
-{"summary":"2-3 sentence live stream analysis","clips":[{"type":"hype|funny|info|rage","score":92,"timestamp":"LIVE","duration":"0:30","title":"Short punchy title for live clip","tags":["TAG1","TAG2"],"bg":"purple|teal|orange|blue","chat_intensity":85}]}';
+  var prompt='You are a Twitch clip expert. A streamer is LIVE right now. Suggest 5 ideal clip moments to create immediately.'+
+    ' Stream: "'+stream.title+'" by '+user.display_name+'.'+
+    ' Game: '+(stream.game_name||'Unknown')+'. Viewers: '+stream.viewer_count+'.'+
+    ' Suggest 5 clip types that perform well for this stream type. These will be live clips.'+
+    ' Respond ONLY with valid JSON: {"summary":"2-3 sentence live analysis","clips":[{"type":"hype|funny|info|rage","score":92,"timestamp":"LIVE","duration":"0:30","title":"Short punchy title","tags":["TAG1","TAG2"],"bg":"purple|teal|orange|blue","chat_intensity":85}]}';
 
   var r=await fetch('https://twitch-proxy.igregg96.workers.dev/claude',{
     method:'POST',headers:{'Content-Type':'application/json'},
