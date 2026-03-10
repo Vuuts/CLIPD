@@ -522,7 +522,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       </div>
 
       <div style="margin-top:auto;display:flex;flex-direction:column;gap:6px">
-        <button class="export-btn" id="createClipBtn" onclick="createTwitchClip()" style="background:var(--ac);font-size:13px;padding:15px">&#9654; CREATE CLIP ON TWITCH</button>
+        <button class="export-btn" id="createClipBtn" onclick="createTwitchClip()" style="background:var(--ac);font-size:13px;padding:15px">&#9654; OPEN VOD ON TWITCH TO CLIP</button>
         <div id="clipLinkBox" style="display:none;background:var(--s2);border:1px solid rgba(0,245,212,.3);padding:10px;font-family:'Space Mono',monospace;font-size:10px">
           <div style="color:var(--mu);margin-bottom:5px;letter-spacing:1px">CLIP LINK</div>
           <div style="display:flex;gap:6px;align-items:center">
@@ -806,42 +806,72 @@ function twitchOAuth(){
 
 // ── CREATE TWITCH CLIP ────────────────────────────────────────
 async function createTwitchClip(){
+  var btn = document.getElementById('createClipBtn');
+  var isLive = currentVodData && currentVodData.isLive;
+  var vodTwitchId = editorClip ? editorClip.vodTwitchId : null;
+
+  // ── VOD MODE: open Twitch editor at exact timestamp ──────────
+  if(!isLive && vodTwitchId){
+    // Convert trimStart seconds to Twitch URL time format (1h23m45s)
+    var s = Math.round(trimStart);
+    var h = Math.floor(s/3600);
+    var m = Math.floor((s%3600)/60);
+    var sec = s%60;
+    var tParam = (h>0?h+'h':'')+(m>0?m+'m':'')+(sec+'s');
+    var vodUrl = 'https://www.twitch.tv/videos/'+vodTwitchId+'?t='+tParam;
+
+    // Show instruction box
+    document.getElementById('clipLinkBox').style.display = 'block';
+    document.getElementById('clipLinkUrl').textContent = 'Opening Twitch at '+fts(Math.round(trimStart))+' — hit CLIP in the Twitch player';
+    document.getElementById('clipLinkUrl').href = vodUrl;
+    document.getElementById('clipLinkUrl').style.color = 'var(--a2)';
+
+    // Save to queue as draft with timestamp
+    if(currentUser){
+      await sb.from('clips').insert({
+        user_id:currentUser.id,
+        vod_id:editorClip.vodId||null,
+        title:editorClip.title,
+        type:editorClip.type,
+        score:editorClip.score,
+        timestamp_start:fts(Math.round(trimStart)),
+        duration:Math.round(trimEnd-trimStart),
+        overlay_text:captions.length?captions[0].text:editorClip.title,
+        status:'draft',
+        captions:{list:captions,style:capStyle,color:capColor},
+        hashtags:document.getElementById('hashtagInput').value.split(' ').filter(Boolean),
+        chat_intensity:editorClip.chat_intensity||70,
+        bg:editorClip.bg||'purple',
+        clip_url:vodUrl,
+        twitch_clip_id:null
+      }).select().single();
+      loadDashboard();
+    }
+
+    window.open(vodUrl, '_blank');
+    btn.textContent = '✓ OPENED ON TWITCH';
+    btn.style.background = 'var(--a2)';
+    btn.style.color = '#000';
+    toast('VOD opened at '+fts(Math.round(trimStart))+' — click Clip in the Twitch player ✔');
+    return;
+  }
+
+  // ── LIVE MODE: create clip via API right now ──────────────────
   if(!twitchUserToken){
-    // Prompt OAuth
-    if(confirm('You need to connect your Twitch account to create clips.\n\nClick OK to connect now.')){
+    if(confirm('Connect your Twitch account to create live clips. Click OK to connect now.')){
       twitchOAuth();
     }
     return;
   }
-  if(!editorClip || !editorClip.vodTwitchId){
-    toast('No VOD linked to this clip');
-    return;
-  }
 
-  var btn = document.getElementById('createClipBtn');
   btn.disabled = true;
-  btn.textContent = '⏳ CREATING CLIP...';
+  btn.textContent = '⏳ CLIPPING...';
 
   try{
-    // Get broadcaster_id — from live stream data, VOD, or currentVodData
-    var broadcasterId = null;
-    if(currentVodData && currentVodData.isLive && currentVodData.user_id){
-      broadcasterId = currentVodData.user_id;
-    } else if(editorClip.vodTwitchId){
-      var vodResp = await fetch('https://api.twitch.tv/helix/videos?id='+editorClip.vodTwitchId, {
-        headers:{'Client-ID':twitchClientId,'Authorization':'Bearer '+twitchUserToken}
-      });
-      var vodData = await vodResp.json();
-      if(!vodData.data || !vodData.data.length) throw new Error('VOD not found — make sure the channel is live or VOD is accessible');
-      broadcasterId = vodData.data[0].user_id;
-    } else if(currentVodData && currentVodData.user_id){
-      broadcasterId = currentVodData.user_id;
-    }
-    if(!broadcasterId) throw new Error('Cannot determine channel — try connecting your Twitch account');
+    var broadcasterId = currentVodData && currentVodData.user_id ? currentVodData.user_id : null;
+    if(!broadcasterId) throw new Error('No live channel found');
 
-    // Create the clip
-    var hasDelay = currentVodData && currentVodData.isLive ? 'false' : 'false';
-    var clipResp = await fetch('https://api.twitch.tv/helix/clips?broadcaster_id='+broadcasterId+'&has_delay='+hasDelay, {
+    var clipResp = await fetch('https://api.twitch.tv/helix/clips?broadcaster_id='+broadcasterId+'&has_delay=false',{
       method:'POST',
       headers:{'Client-ID':twitchClientId,'Authorization':'Bearer '+twitchUserToken}
     });
@@ -852,27 +882,25 @@ async function createTwitchClip(){
       var editUrl = clipData.data[0].edit_url;
       var clipUrl = 'https://clips.twitch.tv/'+clipId;
 
-      // Show link in editor
       document.getElementById('clipLinkBox').style.display = 'block';
       document.getElementById('clipLinkUrl').textContent = clipUrl;
       document.getElementById('clipLinkUrl').href = clipUrl;
 
-      // Save to Supabase with the clip link
       if(currentUser){
         await sb.from('clips').insert({
           user_id:currentUser.id,
-          vod_id:editorClip.vodId||null,
-          title:editorClip.title,
-          type:editorClip.type,
-          score:editorClip.score,
-          timestamp_start:fts(Math.round(trimStart)),
-          duration:Math.round(trimEnd-trimStart),
-          overlay_text:captions.length?captions[0].text:editorClip.title,
+          vod_id:editorClip?editorClip.vodId:null,
+          title:editorClip?editorClip.title:'Live Clip',
+          type:editorClip?editorClip.type:'hype',
+          score:editorClip?editorClip.score:80,
+          timestamp_start:'LIVE',
+          duration:30,
+          overlay_text:captions.length?captions[0].text:(editorClip?editorClip.title:'Live Clip'),
           status:'ready',
           captions:{list:captions,style:capStyle,color:capColor},
           hashtags:document.getElementById('hashtagInput').value.split(' ').filter(Boolean),
-          chat_intensity:editorClip.chat_intensity||70,
-          bg:editorClip.bg||'purple',
+          chat_intensity:editorClip?editorClip.chat_intensity:80,
+          bg:editorClip?editorClip.bg:'purple',
           clip_url:clipUrl,
           edit_url:editUrl,
           twitch_clip_id:clipId
@@ -880,20 +908,18 @@ async function createTwitchClip(){
         loadDashboard();
       }
 
-      btn.textContent = '✓ CLIP CREATED';
+      btn.textContent = '🔴 CLIP CREATED';
       btn.style.background = 'var(--a2)';
       btn.style.color = '#000';
-      toast('Clip created! Link ready to share ✔');
+      toast('Live clip created! ✔ '+clipUrl);
 
-    } else if(clipData.error){
-      throw new Error(clipData.message || clipData.error);
     } else {
-      throw new Error('Clip creation failed — check your Twitch OAuth connection');
+      throw new Error(clipData.message || 'Clip failed — is the stream live?');
     }
   }catch(e){
     btn.disabled = false;
-    btn.textContent = '▶ CREATE CLIP ON TWITCH';
-    btn.style.background = 'var(--ac)';
+    btn.textContent = '🔴 CLIP THIS MOMENT NOW';
+    btn.style.background = '#ff4500';
     btn.style.color = '#fff';
     toast('Error: '+e.message);
   }
@@ -1363,9 +1389,11 @@ function openEditor(idx){
   // Reset create clip button
   var btn = document.getElementById('createClipBtn');
   btn.disabled = false;
-  btn.textContent = '▶ CREATE CLIP ON TWITCH';
-  btn.style.background = 'var(--ac)';
+  var isLiveMode = currentVodData && currentVodData.isLive;
+  btn.textContent = isLiveMode ? '🔴 CLIP THIS MOMENT NOW' : '▶ OPEN VOD ON TWITCH TO CLIP';
+  btn.style.background = isLiveMode ? '#ff4500' : 'var(--ac)';
   btn.style.color = '#fff';
+  btn.style.border = 'none';
   document.getElementById('clipLinkBox').style.display = 'none';
 }
 
@@ -1413,14 +1441,23 @@ function loadTwitchPlayer(clip, vodId, startSec){
 
   try {
     twitchPlayerInst = new Twitch.Player('twitchPlayerDiv', opts);
-    // Seek to timestamp after VOD loads
+    // Seek to timestamp — must wait for PLAYING event, not just READY
     if(opts.video && startSec > 0){
-      twitchPlayerInst.addEventListener(Twitch.Player.READY, function(){
+      var seeked = false;
+      var doSeek = function(){
+        if(seeked) return;
+        seeked = true;
         twitchPlayerInst.seek(startSec);
-      });
+        twitchPlayerInst.pause();
+      };
+      twitchPlayerInst.addEventListener(Twitch.Player.PLAYING, doSeek);
+      // Fallback: also try after 2s in case PLAYING fires before seek is ready
+      setTimeout(function(){
+        if(!seeked){ seeked=true; twitchPlayerInst.seek(startSec); twitchPlayerInst.pause(); }
+      }, 2500);
     }
-    // Mirror to 9:16 div with same options
-    var opts2 = Object.assign({}, opts, {width:'100%', height:'100%'});
+    // Mirror to 9:16 div
+    var opts2 = Object.assign({}, opts, {width:'100%', height:'100%', autoplay:false});
     new Twitch.Player('twitchPlayerDiv916', opts2);
   } catch(e) {
     d1.innerHTML = '<div style="color:#5a5070;font-size:10px;padding:20px;text-align:center">Player unavailable</div>';
