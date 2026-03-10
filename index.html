@@ -280,7 +280,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       <div class="field" style="margin-bottom:6px"><label>TWITCH CLIENT ID</label></div>
       <div class="cg">
         <div class="field" style="margin-bottom:0"><input type="text" id="tcId" placeholder="Client ID from dev.twitch.tv"/></div>
-        <div class="field" style="margin-bottom:0"><input type="password" id="tcSecret" placeholder="Client Secret"/></div>
+        <div class="field" style="margin-bottom:0"><input type="password" id="tcSecret" placeholder="Client Secret (optional)"/></div>
       </div>
       <div style="display:flex;gap:8px;margin-top:12px">
         <button class="btn-sm prim" onclick="saveCreds()">SAVE & TEST</button>
@@ -526,7 +526,7 @@ async function saveCreds(){
   var id = document.getElementById('tcId').value.trim();
   var secret = document.getElementById('tcSecret').value.trim();
   var msg = document.getElementById('credsMsg');
-  if(!id||!secret){msg.className='creds-msg err';msg.textContent='Both fields required.';return;}
+  if(!id){msg.className='creds-msg err';msg.textContent='Client ID is required.';return;}
   msg.className='creds-msg ok';msg.textContent='Testing...';
   var tok = await getToken(id,secret);
   if(tok){
@@ -549,6 +549,7 @@ function updateCredsUI(ok){
 }
 
 async function getToken(id,secret){
+  if(!secret) return 'no-secret';
   try{
     var r = await fetch('https://id.twitch.tv/oauth2/token',{
       method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
@@ -581,7 +582,9 @@ function parseUrl(raw){
 
 // ── TWITCH API ────────────────────────────────────────────────
 async function tGet(path){
-  var r=await fetch('https://api.twitch.tv/helix'+path,{headers:{'Client-ID':twitchClientId,'Authorization':'Bearer '+twitchToken}});
+  var headers = {'Client-ID':twitchClientId};
+  if(twitchToken && twitchToken !== 'no-secret') headers['Authorization'] = 'Bearer '+twitchToken;
+  var r=await fetch('https://api.twitch.tv/helix'+path,{headers});
   if(r.status===401){twitchToken=null;throw new Error('Token expired — re-save your credentials');}
   return r.json();
 }
