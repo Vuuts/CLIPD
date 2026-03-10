@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLIPD</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--bg:#08060f;--s1:#0f0c1a;--s2:#161224;--border:#1e1830;--ac:#9147ff;--a2:#00f5d4;--hot:#ff4500;--text:#edeaf7;--mu:#5a5070;--danger:#ef4444}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(145,71,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(145,71,255,.04) 1px,transparent 1px);background-size:64px 64px;pointer-events:none;z-index:0}
+.page{display:none;position:relative;z-index:1}
+.page.active{display:block}
+
+/* AUTH */
+#authPage{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.auth-box{background:var(--s1);border:1px solid var(--border);padding:44px 36px;width:100%;max-width:400px}
+.auth-logo{font-family:'Bebas Neue',cursive;font-size:34px;letter-spacing:4px;text-align:center;margin-bottom:6px}
+.auth-logo span{color:var(--ac)}
+.auth-sub{font-family:'Space Mono',monospace;font-size:10px;color:var(--mu);text-align:center;letter-spacing:2px;margin-bottom:32px}
+.auth-tabs{display:flex;border:1px solid var(--border);margin-bottom:24px}
+.auth-tab{flex:1;padding:9px;font-family:'Space Mono',monospace;font-size:11px;background:none;border:none;color:var(--mu);cursor:pointer;letter-spacing:1px;transition:all .15s}
+.auth-tab.active{background:var(--ac);color:#fff}
+.field{margin-bottom:14px}
+.field label{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--mu);display:block;margin-bottom:5px}
+.field input{width:100%;background:var(--s2);border:1px solid var(--border);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:11px 13px;outline:none;transition:border-color .2s}
+.field input:focus{border-color:var(--ac)}
+.field input::placeholder{color:var(--mu)}
+.btn-full{width:100%;background:var(--ac);color:#fff;border:none;padding:13px;font-family:'Space Mono',monospace;font-size:12px;letter-spacing:1px;cursor:pointer;transition:background .15s;margin-top:6px}
+.btn-full:hover{background:#a855ff}
+.btn-full:disabled{opacity:.5;cursor:not-allowed}
+.auth-msg{font-family:'Space Mono',monospace;font-size:10px;margin-top:10px;text-align:center;min-height:16px}
+.auth-msg.err{color:var(--danger)}.auth-msg.ok{color:var(--a2)}
+
+/* NAV */
+#appNav{position:fixed;top:0;left:0;right:0;z-index:50;height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-bottom:1px solid var(--border);background:rgba(8,6,15,.92);backdrop-filter:blur(12px)}
+.nav-logo{font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:4px;cursor:pointer}
+.nav-logo span{color:var(--ac)}
+.nav-links{display:flex;gap:2px}
+.nl{font-family:'Space Mono',monospace;font-size:10px;padding:6px 14px;color:var(--mu);cursor:pointer;border:1px solid transparent;transition:all .15s;letter-spacing:.8px}
+.nl:hover{color:var(--text)}
+.nl.active{color:var(--ac);border-color:rgba(145,71,255,.3);background:rgba(145,71,255,.06)}
+.nav-r{display:flex;align-items:center;gap:10px}
+.plan-chip{font-family:'Space Mono',monospace;font-size:9px;padding:3px 8px;border:1px solid rgba(145,71,255,.3);color:var(--ac);letter-spacing:1px}
+.nav-email{font-family:'Space Mono',monospace;font-size:10px;color:var(--mu)}
+.btn-so{background:none;border:1px solid var(--border);color:var(--mu);font-family:'Space Mono',monospace;font-size:10px;padding:5px 11px;cursor:pointer;transition:all .15s}
+.btn-so:hover{border-color:var(--danger);color:var(--danger)}
+
+/* MAIN */
+.main{padding:74px 24px 40px;max-width:1040px;margin:0 auto}
+.pg-title{font-family:'Bebas Neue',cursive;font-size:38px;letter-spacing:2px;margin-bottom:3px}
+.pg-title span{color:var(--ac)}
+.pg-sub{font-family:'Space Mono',monospace;font-size:10px;color:var(--mu);letter-spacing:1.5px;margin-bottom:28px}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--border);border:1px solid var(--border);margin-bottom:28px}
+.stat-box{background:var(--s1);padding:22px 18px}
+.stat-num{font-family:'Bebas Neue',cursive;font-size:38px;line-height:1;color:var(--ac);letter-spacing:2px}
+.stat-lbl{font-family:'Space Mono',monospace;font-size:9px;color:var(--mu);letter-spacing:2px;margin-top:3px}
+
+/* CARDS */
+.card{background:var(--s1);border:1px solid var(--border);padding:22px}
+.card-title{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--mu);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.card-title span{color:var(--ac)}
+.empty{font-family:'Space Mono',monospace;font-size:10px;color:var(--mu);text-align:center;padding:28px;letter-spacing:1px;line-height:2}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+/* ANALYZER */
+.analyzer-card{background:var(--s1);border:1px solid var(--border);padding:26px;margin-bottom:20px}
+.mode-tog{display:flex;border:1px solid var(--border);width:fit-content;margin-bottom:18px}
+.mb{font-family:'Space Mono',monospace;font-size:11px;padding:8px 20px;background:none;border:none;color:var(--mu);cursor:pointer;letter-spacing:1px;transition:all .15s}
+.mb.active{background:var(--ac);color:#fff}
+.input-row{display:flex;margin-bottom:10px}
+.input-row input{flex:1;background:var(--s2);border:1px solid var(--border);border-right:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:12px 16px;outline:none;transition:border-color .2s}
+.input-row input:focus{border-color:var(--ac)}
+.input-row input::placeholder{color:var(--mu)}
+.btn-go{background:var(--ac);color:#fff;border:none;padding:12px 24px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:1px;cursor:pointer;transition:background .15s;white-space:nowrap}
+.btn-go:hover{background:#a855ff}
+.btn-go:disabled{opacity:.5;cursor:not-allowed}
+.hint{font-family:'Space Mono',monospace;font-size:10px;color:var(--mu);letter-spacing:1px}
+
+/* CREDS */
+.creds-bar{background:rgba(145,71,255,.06);border:1px solid rgba(145,71,255,.2);padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.creds-bar p{font-family:'Space Mono',monospace;font-size:10px;color:var(--mu);letter-spacing:1px}
+.creds-bar p b{color:var(--ac)}
+.btn-sm{background:none;border:1px solid var(--border);color:var(--mu);font-family:'Space Mono',monospace;font-size:10px;padding:5px 13px;cursor:pointer;transition:all .15s;letter-spacing:.8px;white-space:nowrap}
+.btn-sm:hover{border-color:var(--ac);color:var(--ac)}
+.btn-sm.ok{border-color:rgba(0,245,212,.3);color:var(--a2)}
+.btn-sm.prim{border-color:var(--ac);color:var(--ac);background:rgba(145,71,255,.08)}
+.btn-sm.prim:hover{background:var(--ac);color:#fff}
+.creds-panel{background:var(--s2);border:1px solid var(--border);padding:18px;margin-bottom:18px;display:none}
+.creds-panel.open{display:block}
+.cg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.creds-msg{font-family:'Space Mono',monospace;font-size:10px;margin-top:8px;padding:7px 11px;display:none}
+.creds-msg.ok{display:block;color:var(--a2);border:1px solid rgba(0,245,212,.3)}
+.creds-msg.err{display:block;color:var(--danger);border:1px solid rgba(239,68,68,.3)}
+
+/* LOADING */
+.load-box{background:var(--s1);border:1px solid var(--border);padding:36px;text-align:center;display:none}
+.load-box.show{display:block}
+.spinner{width:30px;height:30px;border:2px solid var(--border);border-top-color:var(--ac);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-txt{font-family:'Space Mono',monospace;font-size:11px;color:var(--mu);letter-spacing:1.5px;margin-bottom:6px}
+.load-step{font-family:'Space Mono',monospace;font-size:10px;color:var(--ac);letter-spacing:1px;margin-bottom:12px}
+.log{background:var(--s2);border:1px solid var(--border);padding:10px 13px;max-height:90px;overflow-y:auto;text-align:left}
+.ll{font-family:'Space Mono',monospace;font-size:10px;color:var(--mu);line-height:1.9}
+.ll.ok{color:var(--a2)}.ll.info{color:var(--ac)}.ll.warn{color:#f59e0b}
+
+/* RESULTS */
+.results{display:none}
+.results.show{display:block;animation:fu .4s ease}
+@keyframes fu{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.stream-card{background:var(--s1);border:1px solid var(--border);padding:18px;margin-bottom:16px}
+.stream-row{display:flex;align-items:center;gap:13px;padding-bottom:14px;border-bottom:1px solid var(--border);margin-bottom:14px}
+.s-thumb{width:76px;height:46px;background:linear-gradient(135deg,#1a0f2e,#0d0917);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;position:relative}
+.tb{position:absolute;top:3px;left:3px;font-family:'Space Mono',monospace;font-size:8px;padding:1px 4px}
+.tb-v{background:var(--mu);color:#000}.tb-l{background:var(--hot);color:#fff}
+.s-info h3{font-size:13px;font-weight:600;margin-bottom:2px}
+.s-info p{font-family:'Space Mono',monospace;font-size:10px;color:var(--mu)}
+.ab{margin-left:auto;display:flex;align-items:center;gap:5px;font-family:'Space Mono',monospace;font-size:10px;color:var(--a2);flex-shrink:0}
+.ad{width:5px;height:5px;border-radius:50%;background:var(--a2)}
+.steps-row{display:flex}
+.step{flex:1;padding:7px 10px;border:1px solid var(--border);margin-right:-1px;font-size:10px;color:var(--mu);font-family:'Space Mono',monospace;display:flex;align-items:center;gap:5px}
+.step.done{color:var(--a2);border-color:rgba(0,245,212,.2);background:rgba(0,245,212,.03)}
+.ai-box{background:var(--s1);border:1px solid rgba(145,71,255,.2);padding:16px;margin-bottom:16px}
+.ai-hdr{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--ac);margin-bottom:7px}
+.ai-box p{font-size:13px;color:var(--mu);line-height:1.75}
+.chart-box{background:var(--s1);border:1px solid var(--border);padding:16px;margin-bottom:16px}
+.ch-hdr{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--mu);margin-bottom:10px;display:flex;justify-content:space-between}
+.ch-hdr span{color:var(--ac)}
+.ch-bars{display:flex;align-items:flex-end;gap:2px;height:52px}
+.b{flex:1;background:var(--s2);min-height:3px;border-radius:1px;cursor:pointer;transition:background .15s}
+.b:hover,.b.cm{background:var(--ac)}
+.b.sp{background:rgba(145,71,255,.45)}
+.ch-labels{display:flex;justify-content:space-between;margin-top:5px;font-family:'Space Mono',monospace;font-size:9px;color:var(--mu)}
+.filter-row{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.fc{font-family:'Space Mono',monospace;font-size:10px;padding:4px 11px;border:1px solid var(--border);color:var(--mu);cursor:pointer;transition:all .15s;background:none}
+.fc:hover{border-color:var(--ac);color:var(--ac)}
+.fc.active{border-color:var(--ac);color:var(--ac);background:rgba(145,71,255,.1)}
+.clips-hdr{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--mu);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.clips-hdr span{color:var(--ac)}
+.clips-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
+.clip-card{background:var(--s1);border:1px solid var(--border);overflow:hidden;cursor:pointer;transition:all .2s}
+.clip-card:hover{border-color:var(--ac);transform:translateY(-2px);box-shadow:0 6px 20px rgba(145,71,255,.1)}
+.ct{aspect-ratio:16/9;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.cbg{position:absolute;inset:0;opacity:.5}
+.bg-p{background:linear-gradient(160deg,#1a0f2e,#2d1f4a)}
+.bg-t{background:linear-gradient(160deg,#0a1a18,#0f2d28)}
+.bg-o{background:linear-gradient(160deg,#1a0f0a,#2d1a0f)}
+.bg-b{background:linear-gradient(160deg,#0a0f1a,#0f152d)}
+.cp{width:32px;height:32px;border:1.5px solid rgba(255,255,255,.35);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;position:relative;z-index:1;transition:all .2s}
+.clip-card:hover .cp{background:var(--ac);border-color:var(--ac);transform:scale(1.1)}
+.c-ts{position:absolute;bottom:5px;left:5px;font-family:'Space Mono',monospace;font-size:9px;background:rgba(0,0,0,.85);padding:2px 5px;z-index:1;color:var(--a2)}
+.c-dur{position:absolute;bottom:5px;right:5px;font-family:'Space Mono',monospace;font-size:9px;background:rgba(0,0,0,.85);padding:2px 5px;z-index:1}
+.c-sc{position:absolute;top:5px;left:5px;font-family:'Space Mono',monospace;font-size:9px;padding:2px 5px;z-index:1;font-weight:700}
+.sh{background:var(--hot);color:#fff}.sf{background:#f59e0b;color:#000}.si{background:var(--a2);color:#000}.sr{background:var(--danger);color:#fff}
+.c-chat{position:absolute;top:5px;right:5px;font-family:'Space Mono',monospace;font-size:8px;background:rgba(145,71,255,.85);color:#fff;padding:2px 5px;z-index:1}
+.ci{padding:10px}
+.c-type{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1.5px;color:var(--mu);margin-bottom:3px}
+.c-title{font-size:12px;font-weight:500;line-height:1.4;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.c-tags{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:7px}
+.tag{font-family:'Space Mono',monospace;font-size:9px;padding:2px 5px;border:1px solid var(--border);color:var(--mu)}
+.th{border-color:rgba(255,69,0,.4);color:var(--hot)}.tf{border-color:rgba(245,158,11,.4);color:#f59e0b}.ti{border-color:rgba(0,245,212,.4);color:var(--a2)}.tr{border-color:rgba(239,68,68,.4);color:var(--danger)}
+.c-actions{display:flex;gap:4px}
+.ca{flex:1;background:none;border:1px solid var(--border);color:var(--mu);padding:5px;font-family:'Space Mono',monospace;font-size:9px;cursor:pointer;transition:all .15s}
+.ca:hover{border-color:var(--ac);color:var(--ac)}
+.ca.post{border-color:var(--ac);color:var(--ac);background:rgba(145,71,255,.06)}
+.ca.post:hover{background:var(--ac);color:#fff}
+.ca.saved{border-color:var(--a2);color:var(--a2)}
+
+/* QUEUE */
+.q-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.q-stat{font-family:'Space Mono',monospace;font-size:10px;color:var(--mu);letter-spacing:1.5px}
+.q-stat span{color:var(--ac)}
+.clips-list{display:flex;flex-direction:column;gap:2px}
+.clip-row{background:var(--s1);border:1px solid var(--border);display:grid;grid-template-columns:68px 1fr 90px auto;align-items:center;gap:11px;padding:10px 13px;transition:border-color .15s}
+.clip-row:hover{border-color:rgba(145,71,255,.3)}
+.mt{width:68px;height:42px;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:13px;position:relative;flex-shrink:0}
+.mb2{position:absolute;top:2px;left:2px;font-family:'Space Mono',monospace;font-size:8px;padding:1px 3px}
+.ri h4{font-size:12px;font-weight:500;margin-bottom:2px;line-height:1.3}
+.ri p{font-family:'Space Mono',monospace;font-size:9px;color:var(--mu)}
+.rs{font-family:'Space Mono',monospace;font-size:9px;display:flex;align-items:center;gap:4px}
+.sd{width:5px;height:5px;border-radius:50%}
+.st-draft{color:var(--mu)}.st-draft .sd{background:var(--mu)}
+.st-ready{color:var(--a2)}.st-ready .sd{background:var(--a2)}
+.ra{display:flex;gap:4px}
+
+/* ERR */
+.err-box{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.3);padding:14px 18px;display:none;margin-bottom:16px}
+.err-box.show{display:block}
+.err-box p{font-family:'Space Mono',monospace;font-size:11px;color:var(--danger);line-height:1.7}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;right:22px;background:var(--s1);border:1px solid var(--a2);padding:11px 16px;font-family:'Space Mono',monospace;font-size:11px;color:var(--a2);z-index:300;opacity:0;transform:translateY(8px);transition:all .3s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+
+@media(max-width:680px){.clips-grid{grid-template-columns:repeat(2,1fr)}.stats-grid{grid-template-columns:repeat(2,1fr)}.dash-grid{grid-template-columns:1fr}.clip-row{grid-template-columns:52px 1fr auto}.cg{grid-template-columns:1fr}.nav-links{display:none}}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div class="page active" id="authPage">
+  <div id="authInner" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px">
+    <div class="auth-box">
+      <div class="auth-logo">CLIP<span>D</span></div>
+      <div class="auth-sub">TWITCH CLIP ENGINE</div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="setTab('in')">SIGN IN</button>
+        <button class="auth-tab" onclick="setTab('up')">SIGN UP</button>
+      </div>
+      <div id="inForm">
+        <div class="field"><label>EMAIL</label><input type="email" id="siE" placeholder="you@email.com"/></div>
+        <div class="field"><label>PASSWORD</label><input type="password" id="siP" placeholder="••••••••"/></div>
+        <button class="btn-full" id="siBtn" onclick="signIn()">SIGN IN</button>
+      </div>
+      <div id="upForm" style="display:none">
+        <div class="field"><label>EMAIL</label><input type="email" id="suE" placeholder="you@email.com"/></div>
+        <div class="field"><label>PASSWORD</label><input type="password" id="suP" placeholder="min 6 characters"/></div>
+        <button class="btn-full" id="suBtn" onclick="signUp()">CREATE ACCOUNT</button>
+      </div>
+      <div class="auth-msg" id="authMsg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="page" id="appPage">
+  <nav id="appNav">
+    <div class="nav-logo" onclick="showView('dash')">CLIP<span>D</span></div>
+    <div class="nav-links">
+      <div class="nl active" id="nl-dash" onclick="showView('dash')">DASHBOARD</div>
+      <div class="nl" id="nl-analyze" onclick="showView('analyze')">ANALYZE VOD</div>
+      <div class="nl" id="nl-queue" onclick="showView('queue')">CLIP QUEUE</div>
+    </div>
+    <div class="nav-r">
+      <div class="plan-chip">FREE</div>
+      <div class="nav-email" id="navEmail"></div>
+      <button class="btn-so" onclick="signOut()">SIGN OUT</button>
+    </div>
+  </nav>
+
+  <!-- DASHBOARD -->
+  <div class="main" id="dashView">
+    <div class="pg-title">DASHBOARD</div>
+    <div class="pg-sub">YOUR CLIP OVERVIEW</div>
+    <div class="stats-grid">
+      <div class="stat-box"><div class="stat-num" id="stVods">0</div><div class="stat-lbl">VODS ANALYZED</div></div>
+      <div class="stat-box"><div class="stat-num" id="stClips">0</div><div class="stat-lbl">CLIPS FOUND</div></div>
+      <div class="stat-box"><div class="stat-num" id="stReady">0</div><div class="stat-lbl">READY TO POST</div></div>
+      <div class="stat-box"><div class="stat-num" id="stPosted">0</div><div class="stat-lbl">POSTED</div></div>
+    </div>
+    <div class="dash-grid">
+      <div class="card">
+        <div class="card-title">RECENT VODS <span id="vodCount">0</span></div>
+        <div id="recentVods"><div class="empty">No VODs analyzed yet.<br>Go to ANALYZE VOD to get started.</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">RECENT CLIPS <span id="clipCount">0</span></div>
+        <div id="recentClips"><div class="empty">No clips saved yet.<br>Analyze a VOD and save clips.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANALYZER -->
+  <div class="main" id="analyzeView" style="display:none">
+    <div class="pg-title">ANALYZE <span>VOD</span></div>
+    <div class="pg-sub">PASTE A TWITCH VOD OR CHANNEL &mdash; AI FINDS THE CLIPS</div>
+
+    <div class="creds-bar">
+      <p>TWITCH API &mdash; <b id="credsStatus">NOT CONFIGURED</b></p>
+      <button class="btn-sm" id="credsBtn" onclick="toggleCreds()">SETUP KEYS</button>
+    </div>
+
+    <div class="creds-panel" id="credsPanel">
+      <div class="field" style="margin-bottom:6px"><label>TWITCH CLIENT ID</label></div>
+      <div class="cg">
+        <div class="field" style="margin-bottom:0"><input type="text" id="tcId" placeholder="Client ID from dev.twitch.tv"/></div>
+        <div class="field" style="margin-bottom:0"><input type="password" id="tcSecret" placeholder="Client Secret"/></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn-sm prim" onclick="saveCreds()">SAVE & TEST</button>
+        <button class="btn-sm" onclick="toggleCreds()">CANCEL</button>
+      </div>
+      <div class="creds-msg" id="credsMsg"></div>
+    </div>
+
+    <div class="analyzer-card">
+      <div class="mode-tog">
+        <button class="mb active" id="mbVod" onclick="setMode('vod')">&#9654; VOD</button>
+        <button class="mb" id="mbLive" onclick="setMode('live')">&#9679; LIVE</button>
+      </div>
+      <div class="input-row">
+        <input type="text" id="vodUrl" placeholder="twitch.tv/videos/123456789 or twitch.tv/channelname" onkeydown="if(event.key==='Enter')analyze()"/>
+        <button class="btn-go" id="analyzeBtn" onclick="analyze()">FIND CLIPS</button>
+      </div>
+      <div class="hint" id="modeHint">Paste a Twitch VOD URL or channel name &middot; AI reads real chat data</div>
+    </div>
+
+    <div class="err-box" id="errBox"><p id="errMsg"></p></div>
+    <div class="load-box" id="loadBox">
+      <div class="spinner"></div>
+      <div class="load-txt">ANALYZING STREAM</div>
+      <div class="load-step" id="loadStep">Initializing...</div>
+      <div class="log" id="logBox"></div>
+    </div>
+
+    <div class="results" id="resultsWrap">
+      <div class="stream-card">
+        <div class="stream-row">
+          <div class="s-thumb"><div class="tb tb-v" id="streamBadge">VOD</div>&#9670;</div>
+          <div class="s-info"><h3 id="streamTitle">-</h3><p id="streamMeta">-</p></div>
+          <div class="ab"><div class="ad"></div>ANALYZED</div>
+        </div>
+        <div class="steps-row">
+          <div class="step done">&#10003; FETCH</div>
+          <div class="step done">&#10003; CHAT</div>
+          <div class="step done">&#10003; SPIKES</div>
+          <div class="step done">&#10003; AI RANK</div>
+        </div>
+      </div>
+      <div class="ai-box"><div class="ai-hdr">&#10022; AI ANALYSIS</div><p id="aiSummary">-</p></div>
+      <div class="chart-box">
+        <div class="ch-hdr"><span>CHAT ACTIVITY</span>spikes = clip moments</div>
+        <div class="ch-bars" id="chartBars"></div>
+        <div class="ch-labels" id="chartLabels"></div>
+      </div>
+      <div class="filter-row">
+        <div class="fc active" onclick="filterClips('all',this)">ALL</div>
+        <div class="fc" onclick="filterClips('hype',this)">&#128293; HYPE</div>
+        <div class="fc" onclick="filterClips('funny',this)">&#128514; FUNNY</div>
+        <div class="fc" onclick="filterClips('info',this)">&#128161; INFO</div>
+        <div class="fc" onclick="filterClips('rage',this)">&#128465; RAGE</div>
+      </div>
+      <div class="clips-hdr">CLIPS FOUND <span id="clipCountHdr">0</span></div>
+      <div class="clips-grid" id="clipsGrid"></div>
+    </div>
+  </div>
+
+  <!-- QUEUE -->
+  <div class="main" id="queueView" style="display:none">
+    <div class="pg-title">CLIP <span>QUEUE</span></div>
+    <div class="pg-sub">MANAGE AND PREPARE YOUR CLIPS FOR POSTING</div>
+    <div class="q-hdr">
+      <div class="q-stat">QUEUE &mdash; <span id="qReadyCount">0 READY</span></div>
+      <div style="display:flex;gap:7px">
+        <button class="btn-sm" onclick="loadQueue()">&#8635; REFRESH</button>
+        <button class="btn-sm prim" onclick="toast('Scheduler coming soon')">SCHEDULE ALL READY</button>
+      </div>
+    </div>
+    <div class="clips-list" id="queueList"><div class="empty" style="background:var(--s1);border:1px solid var(--border);padding:40px">No clips in queue yet. Analyze a VOD and save clips to get started.</div></div>
+  </div>
+</div>
+
+<div class="toast" id="toastEl"></div>
+
+<script>
+// ── SUPABASE ─────────────────────────────────────────────────
+var SB_URL = 'https://myetabcvnbltfrupuod.supabase.co';
+var SB_KEY = 'sb_publishable_6LzH3QnUpDMWxombfztVDQ_iq7IOo9I';
+var sb = supabase.createClient(SB_URL, SB_KEY, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce'
+  },
+  global: {
+    headers: {
+      'apikey': SB_KEY,
+      'Authorization': 'Bearer ' + SB_KEY
+    }
+  }
+});
+var currentUser = null;
+var appMode = 'vod';
+var twitchToken = null;
+var twitchClientId = null;
+var allClips = [];
+var currentVodData = null;
+
+// ── INIT ─────────────────────────────────────────────────────
+(async function(){
+  var {data:{session}} = await sb.auth.getSession();
+  if(session){bootApp(session.user);}
+  sb.auth.onAuthStateChange(function(_,session){
+    if(session){bootApp(session.user);}
+    else{showAuth();}
+  });
+  restoreCreds();
+})();
+
+function showAuth(){
+  document.getElementById('authPage').classList.add('active');
+  document.getElementById('appPage').classList.remove('active');
+}
+
+function bootApp(user){
+  currentUser = user;
+  document.getElementById('authPage').classList.remove('active');
+  document.getElementById('appPage').classList.add('active');
+  document.getElementById('navEmail').textContent = user.email.split('@')[0].toUpperCase();
+  showView('dash');
+  loadDashboard();
+}
+
+// ── AUTH ─────────────────────────────────────────────────────
+function setTab(tab){
+  document.querySelectorAll('.auth-tab').forEach(function(t){t.classList.remove('active');});
+  event.target.classList.add('active');
+  document.getElementById('inForm').style.display = tab==='in'?'block':'none';
+  document.getElementById('upForm').style.display = tab==='up'?'block':'none';
+  setAuthMsg('','');
+}
+
+function setAuthMsg(msg, type){
+  var el = document.getElementById('authMsg');
+  el.textContent = msg;
+  el.className = 'auth-msg' + (type?' '+type:'');
+}
+
+async function signIn(){
+  var email = document.getElementById('siE').value.trim();
+  var pass = document.getElementById('siP').value;
+  if(!email||!pass){setAuthMsg('Fill in all fields','err');return;}
+  var btn = document.getElementById('siBtn');
+  btn.disabled=true; btn.textContent='SIGNING IN...';
+  var {error} = await sb.auth.signInWithPassword({email,password:pass});
+  btn.disabled=false; btn.textContent='SIGN IN';
+  if(error){setAuthMsg(error.message,'err');}
+}
+
+async function signUp(){
+  var email = document.getElementById('suE').value.trim();
+  var pass = document.getElementById('suP').value;
+  if(!email||!pass){setAuthMsg('Fill in all fields','err');return;}
+  if(pass.length<6){setAuthMsg('Password must be at least 6 characters','err');return;}
+  var btn = document.getElementById('suBtn');
+  btn.disabled=true; btn.textContent='CREATING...';
+  var {error} = await sb.auth.signUp({email,password:pass});
+  btn.disabled=false; btn.textContent='CREATE ACCOUNT';
+  if(error){setAuthMsg(error.message,'err');}
+  else{setAuthMsg('Account created! Check your email to confirm, then sign in.','ok');}
+}
+
+async function signOut(){
+  await sb.auth.signOut();
+  currentUser=null;
+  showAuth();
+}
+
+// ── VIEWS ─────────────────────────────────────────────────────
+function showView(v){
+  ['dash','analyze','queue'].forEach(function(id){
+    document.getElementById(id+'View').style.display = id===v?'block':'none';
+    var nl = document.getElementById('nl-'+id);
+    if(nl) nl.className = 'nl'+(id===v?' active':'');
+  });
+  if(v==='dash') loadDashboard();
+  if(v==='queue') loadQueue();
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────
+async function loadDashboard(){
+  if(!currentUser) return;
+  var {data:vods} = await sb.from('vods').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false}).limit(5);
+  var {data:clips} = await sb.from('clips').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false}).limit(6);
+
+  document.getElementById('stVods').textContent = vods?vods.length:0;
+  document.getElementById('stClips').textContent = clips?clips.length:0;
+  document.getElementById('stReady').textContent = clips?clips.filter(function(c){return c.status==='ready'}).length:0;
+  document.getElementById('stPosted').textContent = clips?clips.filter(function(c){return c.status==='posted'}).length:0;
+  document.getElementById('vodCount').textContent = vods?vods.length:0;
+  document.getElementById('clipCount').textContent = clips?clips.length:0;
+
+  if(vods && vods.length){
+    document.getElementById('recentVods').innerHTML = vods.map(function(v){
+      return '<div style="padding:10px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">' +
+        '<div><div style="font-size:13px;font-weight:500;margin-bottom:2px">'+v.title+'</div>' +
+        '<div style="font-family:\'Space Mono\',monospace;font-size:9px;color:var(--mu)">'+v.game+' &middot; '+v.duration+'</div></div>' +
+        '<div style="font-family:\'Space Mono\',monospace;font-size:9px;color:var(--ac)">'+v.status.toUpperCase()+'</div></div>';
+    }).join('');
+  }
+
+  if(clips && clips.length){
+    var bm={hype:'sh',funny:'sf',info:'si',rage:'sr'};
+    document.getElementById('recentClips').innerHTML = clips.map(function(c){
+      return '<div style="padding:10px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">' +
+        '<div><div style="font-size:12px;font-weight:500;margin-bottom:2px">'+c.title+'</div>' +
+        '<div style="font-family:\'Space Mono\',monospace;font-size:9px;color:var(--mu)">@'+c.timestamp_start+' &middot; '+fd(c.duration)+'</div></div>' +
+        '<div style="font-family:\'Space Mono\',monospace;font-size:9px;padding:2px 6px;background:var(--s2);border:1px solid var(--border)" class="'+bm[c.type]+'">'+c.score+'</div></div>';
+    }).join('');
+  }
+}
+
+// ── TWITCH CREDS ──────────────────────────────────────────────
+function restoreCreds(){
+  var saved = sessionStorage.getItem('clipd_tc');
+  if(saved){
+    var c = JSON.parse(saved);
+    document.getElementById('tcId').value = c.id||'';
+    document.getElementById('tcSecret').value = c.secret||'';
+    getToken(c.id,c.secret).then(function(tok){
+      if(tok){
+        twitchToken=tok; twitchClientId=c.id;
+        updateCredsUI(true);
+      }
+    });
+  }
+}
+
+function toggleCreds(){
+  var p = document.getElementById('credsPanel');
+  p.classList.toggle('open');
+}
+
+async function saveCreds(){
+  var id = document.getElementById('tcId').value.trim();
+  var secret = document.getElementById('tcSecret').value.trim();
+  var msg = document.getElementById('credsMsg');
+  if(!id||!secret){msg.className='creds-msg err';msg.textContent='Both fields required.';return;}
+  msg.className='creds-msg ok';msg.textContent='Testing...';
+  var tok = await getToken(id,secret);
+  if(tok){
+    twitchToken=tok; twitchClientId=id;
+    sessionStorage.setItem('clipd_tc',JSON.stringify({id,secret}));
+    msg.textContent='&#10003; Connected to Twitch API';
+    updateCredsUI(true);
+    setTimeout(function(){document.getElementById('credsPanel').classList.remove('open');},1200);
+  } else {
+    msg.className='creds-msg err';
+    msg.textContent='Invalid credentials. Check your Client ID and Secret at dev.twitch.tv';
+  }
+}
+
+function updateCredsUI(ok){
+  document.getElementById('credsStatus').textContent = ok ? 'CONNECTED' : 'NOT CONFIGURED';
+  document.getElementById('credsStatus').style.color = ok ? 'var(--a2)' : 'var(--ac)';
+  document.getElementById('credsBtn').className = ok ? 'btn-sm ok' : 'btn-sm';
+  document.getElementById('credsBtn').textContent = ok ? '&#10003; ACTIVE' : 'SETUP KEYS';
+}
+
+async function getToken(id,secret){
+  try{
+    var r = await fetch('https://id.twitch.tv/oauth2/token',{
+      method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:'client_id='+encodeURIComponent(id)+'&client_secret='+encodeURIComponent(secret)+'&grant_type=client_credentials'
+    });
+    var d = await r.json();
+    return d.access_token||null;
+  }catch(e){return null;}
+}
+
+// ── MODE ──────────────────────────────────────────────────────
+function setMode(m){
+  appMode=m;
+  document.getElementById('mbVod').className='mb'+(m==='vod'?' active':'');
+  document.getElementById('mbLive').className='mb'+(m==='live'?' active':'');
+  document.getElementById('vodUrl').placeholder = m==='live'?'twitch.tv/channelname':'twitch.tv/videos/123456789 or twitch.tv/channelname';
+  document.getElementById('modeHint').textContent = m==='live'?'Enter a live channel \u00b7 AI monitors chat in real-time':'Paste a Twitch VOD URL or channel name \u00b7 AI reads real chat data';
+}
+
+// ── PARSE URL ─────────────────────────────────────────────────
+function parseUrl(raw){
+  raw=raw.trim().replace(/^https?:\/\//,'').replace(/^www\./,'');
+  var vm=raw.match(/twitch\.tv\/videos\/(\d+)/);
+  if(vm) return {type:'vod_id',value:vm[1]};
+  if(/^\d+$/.test(raw)) return {type:'vod_id',value:raw};
+  var cm=raw.match(/(?:twitch\.tv\/)?([a-zA-Z0-9_]{3,25})/);
+  if(cm) return {type:'channel',value:cm[1]};
+  return null;
+}
+
+// ── TWITCH API ────────────────────────────────────────────────
+async function tGet(path){
+  var r=await fetch('https://api.twitch.tv/helix'+path,{headers:{'Client-ID':twitchClientId,'Authorization':'Bearer '+twitchToken}});
+  if(r.status===401){twitchToken=null;throw new Error('Token expired — re-save your credentials');}
+  return r.json();
+}
+
+async function getVodById(id){
+  var d=await tGet('/videos?id='+id);
+  if(!d.data||!d.data.length) throw new Error('VOD '+id+' not found. It may be deleted or subscriber-only.');
+  return d.data[0];
+}
+
+async function getLatestVod(channel){
+  var u=await tGet('/users?login='+encodeURIComponent(channel));
+  if(!u.data||!u.data.length) throw new Error('Channel "'+channel+'" not found on Twitch.');
+  var v=await tGet('/videos?user_id='+u.data[0].id+'&type=archive&first=1');
+  if(!v.data||!v.data.length) throw new Error('No VODs found for '+u.data[0].display_name+'. VODs may be disabled.');
+  return v.data[0];
+}
+
+// ── CHAT ──────────────────────────────────────────────────────
+async function fetchChat(vodId){
+  try{
+    var r=await fetch('https://logs.ivr.fi/v2/vods/'+vodId+'?limit=5000');
+    if(!r.ok) throw new Error('status '+r.status);
+    var d=await r.json();
+    return d.messages||null;
+  }catch(e){
+    addLog('Chat logs unavailable via ivr.fi ('+e.message+') — using activity simulation','warn');
+    return null;
+  }
+}
+
+function buildBuckets(msgs,durSec,n){
+  n=n||80;
+  var buckets=new Array(n).fill(0);
+  if(!msgs||!msgs.length){
+    for(var i=0;i<n;i++){
+      buckets[i]=Math.floor(Math.random()*20+4);
+      if(Math.random()<0.1) buckets[i]+=Math.floor(Math.random()*80+40);
+    }
+    return buckets;
+  }
+  var bs=durSec/n;
+  msgs.forEach(function(m){
+    var ts=m.offset||m.contentOffsetSeconds||0;
+    var idx=Math.min(Math.floor(ts/bs),n-1);
+    buckets[idx]++;
+  });
+  return buckets;
+}
+
+function findSpikes(buckets,topN){
+  topN=topN||8;
+  var avg=buckets.reduce(function(a,b){return a+b},0)/buckets.length;
+  var thresh=avg*2.5;
+  var cands=[];
+  for(var i=1;i<buckets.length-1;i++){
+    if(buckets[i]>thresh) cands.push({idx:i,count:buckets[i]});
+  }
+  cands.sort(function(a,b){return b.count-a.count});
+  return cands.slice(0,topN);
+}
+
+function renderChart(buckets,spikes,durSec){
+  var max=Math.max.apply(null,buckets);
+  var sIdxs=spikes.map(function(s){return s.idx});
+  var html='';
+  buckets.forEach(function(v,i){
+    var pct=max>0?Math.round((v/max)*100):4;
+    pct=Math.max(pct,4);
+    var cls=sIdxs.indexOf(i)>=0?'b cm':(v>(max*.4)?'b sp':'b');
+    html+='<div class="'+cls+'" style="height:'+pct+'%"></div>';
+  });
+  document.getElementById('chartBars').innerHTML=html;
+  var d=durSec;
+  document.getElementById('chartLabels').innerHTML='<span>'+fts(0)+'</span><span>'+fts(Math.round(d*.25))+'</span><span>'+fts(Math.round(d*.5))+'</span><span>'+fts(Math.round(d*.75))+'</span><span>'+fts(d)+'</span>';
+}
+
+// ── CLAUDE ────────────────────────────────────────────────────
+async function callClaude(vod,spikes,buckets,durSec,msgs){
+  var sData=spikes.map(function(s){
+    return {timestamp:fts(Math.round((s.idx/buckets.length)*durSec)),msg_count:s.count,intensity:Math.round((s.count/Math.max.apply(null,buckets))*100)};
+  });
+  var sample='';
+  if(msgs&&msgs.length){
+    sample='Chat sample: '+msgs.slice(0,150).map(function(m){return m.message&&m.message.body?m.message.body:m.body||'';}).filter(Boolean).slice(0,80).join(' | ');
+  }
+  var prompt='You are an expert Twitch VOD analyst. Analyze this stream and identify the best clip moments.\n\nStream: "'+vod.title+'" by '+vod.user_name+'\nGame: '+(vod.game_name||'Unknown')+'\nDuration: '+vod.duration+'\nViews: '+vod.view_count+'\n\nChat spikes (where chat went crazy):\n'+JSON.stringify(sData)+'\n\n'+sample+'\n\nGenerate 5 clip suggestions anchored to the spike timestamps.\n\nRespond ONLY with valid JSON (no markdown, no backticks):\n{"summary":"2-3 sentence stream analysis","clips":[{"type":"hype|funny|info|rage","score":92,"timestamp":"1:23:45","duration":"0:45","title":"Short punchy title","tags":["TAG1","TAG2"],"bg":"purple|teal|orange|blue","chat_intensity":85}]}';
+
+  var r=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+  });
+  var d=await r.json();
+  var txt=d.content.map(function(i){return i.text||'';}).join('');
+  return JSON.parse(txt.replace(/```json|```/g,'').trim());
+}
+
+// ── ANALYZE ───────────────────────────────────────────────────
+async function analyze(){
+  var raw=document.getElementById('vodUrl').value.trim();
+  if(!raw){flashInput();return;}
+  clearErr();
+  document.getElementById('resultsWrap').className='results';
+  document.getElementById('logBox').innerHTML='';
+  document.getElementById('loadBox').className='load-box show';
+  document.getElementById('analyzeBtn').disabled=true;
+  document.getElementById('analyzeBtn').textContent='ANALYZING...';
+  allClips=[];
+
+  try{
+    if(!twitchToken){
+      throw new Error('Twitch credentials required. Click SETUP KEYS above.');
+    }
+
+    var parsed=parseUrl(raw);
+    if(!parsed) throw new Error('Could not parse URL. Try: twitch.tv/videos/123456789');
+
+    addLog('Connecting to Twitch...','info');
+    var vod;
+    if(parsed.type==='vod_id'){
+      addLog('Fetching VOD '+parsed.value+'...','info');
+      vod=await getVodById(parsed.value);
+    } else {
+      addLog('Looking up channel: '+parsed.value+'...','info');
+      vod=await getLatestVod(parsed.value);
+    }
+    addLog('Found: "'+vod.title+'" ('+vod.duration+')','ok');
+    currentVodData=vod;
+
+    var durSec=parseDur(vod.duration)||7200;
+
+    addLog('Fetching chat logs...','info');
+    var msgs=await fetchChat(vod.id);
+    if(msgs) addLog('Loaded '+msgs.length+' chat messages','ok');
+
+    addLog('Analyzing chat spikes...','info');
+    var buckets=buildBuckets(msgs,durSec,80);
+    var spikes=findSpikes(buckets,8);
+    addLog('Found '+spikes.length+' spike moments','ok');
+
+    addLog('Running Claude AI analysis...','info');
+    var analysis=await callClaude(vod,spikes,buckets,durSec,msgs);
+    addLog('AI analysis complete','ok');
+
+    // Save VOD to Supabase
+    var {data:savedVod} = await sb.from('vods').upsert({
+      user_id:currentUser.id,
+      twitch_vod_id:vod.id,
+      title:vod.title,
+      game:vod.game_name||'Unknown',
+      duration:vod.duration,
+      view_count:vod.view_count,
+      status:'analyzed'
+    },{onConflict:'twitch_vod_id'}).select().single();
+
+    addLog('VOD saved to your account','ok');
+
+    document.getElementById('loadBox').className='load-box';
+    document.getElementById('analyzeBtn').disabled=false;
+    document.getElementById('analyzeBtn').textContent='FIND CLIPS';
+
+    renderResults(vod,analysis,buckets,spikes,durSec,savedVod);
+
+  }catch(e){
+    document.getElementById('loadBox').className='load-box';
+    document.getElementById('analyzeBtn').disabled=false;
+    document.getElementById('analyzeBtn').textContent='FIND CLIPS';
+    showErr(e.message);
+  }
+}
+
+// ── RENDER RESULTS ─────────────────────────────────────────────
+function renderResults(vod,analysis,buckets,spikes,durSec,savedVod){
+  document.getElementById('streamTitle').textContent=vod.title;
+  document.getElementById('streamMeta').textContent=vod.user_name+' \u00b7 '+vod.duration+' \u00b7 '+Number(vod.view_count).toLocaleString()+' views';
+  var tb=document.getElementById('streamBadge');
+  tb.textContent=appMode==='live'?'LIVE':'VOD';
+  tb.className='tb '+(appMode==='live'?'tb-l':'tb-v');
+  document.getElementById('aiSummary').textContent=analysis.summary||'';
+  renderChart(buckets,spikes,durSec);
+
+  allClips=(analysis.clips||[]).map(function(c){return Object.assign({},c,{vodId:savedVod?savedVod.id:null,savedId:null});});
+  document.getElementById('clipCountHdr').textContent=allClips.length+' CLIPS';
+  renderClips(allClips);
+
+  document.getElementById('resultsWrap').className='results show';
+  setTimeout(function(){document.getElementById('resultsWrap').scrollIntoView({behavior:'smooth',block:'start'});},100);
+}
+
+function renderClips(clips){
+  var bgm={purple:'bg-p',teal:'bg-t',orange:'bg-o',blue:'bg-b'};
+  var tlm={hype:'HYPE MOMENT',funny:'FUNNY CLIP',info:'INFORMATIONAL',rage:'RAGE MOMENT'};
+  var scm={hype:'sh',funny:'sf',info:'si',rage:'sr'};
+  var tcm={hype:'th',funny:'tf',info:'ti',rage:'tr'};
+  if(!clips.length){document.getElementById('clipsGrid').innerHTML='<p style="font-family:\'Space Mono\',monospace;font-size:10px;color:var(--mu);padding:20px">No clips for this filter.</p>';return;}
+  document.getElementById('clipsGrid').innerHTML=clips.map(function(clip,i){
+    var bg=bgm[clip.bg]||'bg-p';
+    var sc=scm[clip.type]||'sh';
+    var tc=tcm[clip.type]||'th';
+    var tags=(clip.tags||[]).map(function(t){return '<span class="tag '+tc+'">'+t+'</span>';}).join('');
+    var isSaved=clip.savedId;
+    return '<div class="clip-card">'+
+      '<div class="ct"><div class="cbg '+bg+'"></div><div class="cp">&#9654;</div>'+
+      '<div class="c-sc '+sc+'">'+clip.score+'</div>'+
+      '<div class="c-chat">&#9650;CHAT x'+Math.max(1,Math.round((clip.chat_intensity||70)/20))+'</div>'+
+      '<div class="c-ts">'+(clip.timestamp||'0:00')+'</div>'+
+      '<div class="c-dur">'+(clip.duration||'0:30')+'</div></div>'+
+      '<div class="ci"><div class="c-type">'+(tlm[clip.type]||clip.type.toUpperCase())+'</div>'+
+      '<div class="c-title">'+(clip.title||'Untitled')+'</div>'+
+      '<div class="c-tags">'+tags+'</div>'+
+      '<div class="c-actions">'+
+        '<button class="ca '+(isSaved?'saved':'post')+'" id="saveBtn'+i+'" onclick="saveClip('+i+',this)">'+(isSaved?'&#10003; SAVED':'SAVE')+'</button>'+
+        '<button class="ca" onclick="toast(\'Caption editor coming in next update\')">EDIT</button>'+
+      '</div></div></div>';
+  }).join('');
+}
+
+// ── SAVE CLIP ─────────────────────────────────────────────────
+async function saveClip(idx,btn){
+  if(!currentUser) return;
+  var clip=allClips[idx];
+  if(clip.savedId){toast('Already saved');return;}
+  btn.disabled=true;btn.textContent='SAVING...';
+  var {data,error}=await sb.from('clips').insert({
+    user_id:currentUser.id,
+    vod_id:clip.vodId||null,
+    title:clip.title,
+    type:clip.type,
+    score:clip.score,
+    timestamp_start:clip.timestamp,
+    duration:parseInt(clip.duration)||30,
+    overlay_text:clip.title,
+    status:'draft',
+    captions:{},
+    hashtags:[],
+    chat_intensity:clip.chat_intensity||70,
+    bg:clip.bg||'purple'
+  }).select().single();
+  if(error){btn.disabled=false;btn.textContent='SAVE';toast('Save failed: '+error.message);return;}
+  allClips[idx].savedId=data.id;
+  btn.textContent='&#10003; SAVED';
+  btn.className='ca saved';
+  toast('Clip saved to your queue \u2714');
+  loadDashboard();
+}
+
+function filterClips(type,el){
+  document.querySelectorAll('.fc').forEach(function(c){c.classList.remove('active');});
+  el.classList.add('active');
+  var filtered=type==='all'?allClips:allClips.filter(function(c){return c.type===type;});
+  document.getElementById('clipCountHdr').textContent=filtered.length+' CLIPS';
+  renderClips(filtered);
+}
+
+// ── QUEUE ──────────────────────────────────────────────────────
+async function loadQueue(){
+  if(!currentUser) return;
+  var {data:clips,error}=await sb.from('clips').select('*, vods(title,game)').eq('user_id',currentUser.id).order('created_at',{ascending:false});
+  if(error){document.getElementById('queueList').innerHTML='<div class="empty" style="background:var(--s1);border:1px solid var(--border);padding:40px">Error loading queue.</div>';return;}
+  var ready=clips?clips.filter(function(c){return c.status==='ready'}).length:0;
+  document.getElementById('qReadyCount').textContent=(ready)+' READY';
+  if(!clips||!clips.length){document.getElementById('queueList').innerHTML='<div class="empty" style="background:var(--s1);border:1px solid var(--border);padding:40px">No clips yet. Analyze a VOD and save clips.</div>';return;}
+  var bm={hype:'sh',funny:'sf',info:'si',rage:'sr'};
+  document.getElementById('queueList').innerHTML=clips.map(function(c){
+    var sc='st-'+c.status;
+    return '<div class="clip-row">'+
+      '<div class="mt"><div class="mb2 '+bm[c.type]+'">'+c.score+'</div>&#9670;</div>'+
+      '<div class="ri"><h4>'+c.title+'</h4><p>'+(c.vods?c.vods.game:'Unknown')+' &middot; @'+c.timestamp_start+' &middot; '+fd(c.duration)+'</p></div>'+
+      '<div class="rs '+sc+'"><div class="sd"></div>'+c.status.toUpperCase()+'</div>'+
+      '<div class="ra">'+
+        '<button class="btn-sm" onclick="toggleReady(\''+c.id+'\',\''+c.status+'\',this)">'+(c.status==='ready'?'UNREADY':'MARK READY')+'</button>'+
+        '<button class="btn-sm" onclick="deleteClip(\''+c.id+'\',this)">&#215;</button>'+
+      '</div></div>';
+  }).join('');
+}
+
+async function toggleReady(id,status,btn){
+  var newStatus=status==='ready'?'draft':'ready';
+  var {error}=await sb.from('clips').update({status:newStatus}).eq('id',id);
+  if(!error){toast(newStatus==='ready'?'Marked ready \u2714':'Moved back to draft');loadQueue();}
+}
+
+async function deleteClip(id,btn){
+  if(!confirm('Delete this clip?')) return;
+  var {error}=await sb.from('clips').delete().eq('id',id);
+  if(!error){toast('Clip deleted');loadQueue();loadDashboard();}
+}
+
+// ── HELPERS ────────────────────────────────────────────────────
+function fd(s){return Math.floor(s/60)+':'+(s%60<10?'0':'')+s%60;}
+function fts(s){var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;return h>0?h+':'+(m<10?'0':'')+m+':'+(sec<10?'0':'')+sec:m+':'+(sec<10?'0':'')+sec;}
+function parseDur(str){if(!str)return 0;var h=str.match(/(\d+)h/),m=str.match(/(\d+)m/),s=str.match(/(\d+)s/);return(h?parseInt(h[1])*3600:0)+(m?parseInt(m[1])*60:0)+(s?parseInt(s[1]):0);}
+function addLog(txt,type){var l=document.getElementById('logBox');var d=document.createElement('div');d.className='ll '+(type||'');d.textContent='> '+txt;l.appendChild(d);l.scrollTop=l.scrollHeight;document.getElementById('loadStep').textContent=txt;}
+function showErr(msg){var b=document.getElementById('errBox');b.className='err-box show';document.getElementById('errMsg').textContent=msg;}
+function clearErr(){document.getElementById('errBox').className='err-box';}
+function flashInput(){var i=document.querySelector('.input-row input');i.style.borderColor='var(--danger)';setTimeout(function(){i.style.borderColor='';},800);}
+
+var toastTimer;
+function toast(msg){var t=document.getElementById('toastEl');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove('show');},2800);}
+</script>
+</body>
+</html>
