@@ -812,17 +812,25 @@ async function createTwitchClip(){
   btn.textContent = '⏳ CREATING CLIP...';
 
   try{
-    // Twitch Create Clip API requires broadcaster_id (user_id of the channel)
-    // We need to get the user_id from the VOD first
-    var vodResp = await fetch('https://api.twitch.tv/helix/videos?id='+editorClip.vodTwitchId, {
-      headers:{'Client-ID':twitchClientId,'Authorization':'Bearer '+twitchUserToken}
-    });
-    var vodData = await vodResp.json();
-    if(!vodData.data || !vodData.data.length) throw new Error('VOD not found');
-    var broadcasterId = vodData.data[0].user_id;
+    // Get broadcaster_id — from live stream data, VOD, or currentVodData
+    var broadcasterId = null;
+    if(currentVodData && currentVodData.isLive && currentVodData.user_id){
+      broadcasterId = currentVodData.user_id;
+    } else if(editorClip.vodTwitchId){
+      var vodResp = await fetch('https://api.twitch.tv/helix/videos?id='+editorClip.vodTwitchId, {
+        headers:{'Client-ID':twitchClientId,'Authorization':'Bearer '+twitchUserToken}
+      });
+      var vodData = await vodResp.json();
+      if(!vodData.data || !vodData.data.length) throw new Error('VOD not found — make sure the channel is live or VOD is accessible');
+      broadcasterId = vodData.data[0].user_id;
+    } else if(currentVodData && currentVodData.user_id){
+      broadcasterId = currentVodData.user_id;
+    }
+    if(!broadcasterId) throw new Error('Cannot determine channel — try connecting your Twitch account');
 
     // Create the clip
-    var clipResp = await fetch('https://api.twitch.tv/helix/clips?broadcaster_id='+broadcasterId+'&has_delay=false', {
+    var hasDelay = currentVodData && currentVodData.isLive ? 'false' : 'false';
+    var clipResp = await fetch('https://api.twitch.tv/helix/clips?broadcaster_id='+broadcasterId+'&has_delay='+hasDelay, {
       method:'POST',
       headers:{'Client-ID':twitchClientId,'Authorization':'Bearer '+twitchUserToken}
     });
@@ -894,7 +902,7 @@ function setMode(m){
   document.getElementById('mbVod').className='mb'+(m==='vod'?' active':'');
   document.getElementById('mbLive').className='mb'+(m==='live'?' active':'');
   document.getElementById('vodUrl').placeholder = m==='live'?'twitch.tv/channelname':'twitch.tv/videos/123456789 or twitch.tv/channelname';
-  document.getElementById('modeHint').textContent = m==='live'?'Enter a live channel \u00b7 AI monitors chat in real-time':'Paste a Twitch VOD URL or channel name \u00b7 AI reads real chat data';
+  document.getElementById('modeHint').textContent = m==='live'?'Enter a live channel \u00b7 CLIPD creates clips from the broadcast right now':'Paste a Twitch VOD URL or channel name \u00b7 AI reads chat data \u00b7 auto-falls back to existing clips if VODs are disabled';
 }
 
 // ── PARSE URL ─────────────────────────────────────────────────
@@ -919,16 +927,36 @@ async function tGet(path){
 
 async function getVodById(id){
   var d=await tGet('/videos?id='+id);
-  if(!d.data||!d.data.length) throw new Error('VOD '+id+' not found. It may be deleted or subscriber-only.');
+  if(!d.data||!d.data.length) throw new Error('VOD not found — may be sub-only or deleted');
   return d.data[0];
 }
 
-async function getLatestVod(channel){
+async function getUser(channel){
   var u=await tGet('/users?login='+encodeURIComponent(channel));
   if(!u.data||!u.data.length) throw new Error('Channel "'+channel+'" not found on Twitch.');
-  var v=await tGet('/videos?user_id='+u.data[0].id+'&type=archive&first=1');
-  if(!v.data||!v.data.length) throw new Error('No VODs found for '+u.data[0].display_name+'. VODs may be disabled.');
+  return u.data[0];
+}
+
+async function getLatestVod(userId){
+  var tok = twitchUserToken || twitchToken;
+  var headers = {'Client-ID':twitchClientId};
+  if(tok && tok!=='no-secret') headers['Authorization']='Bearer '+tok;
+  var r=await fetch('https://api.twitch.tv/helix/videos?user_id='+userId+'&type=archive&first=1',{headers});
+  var v=await r.json();
+  if(!v.data||!v.data.length) return null;
   return v.data[0];
+}
+
+async function getLiveStream(userId){
+  var d=await tGet('/streams?user_id='+userId);
+  if(!d.data||!d.data.length) return null;
+  return d.data[0];
+}
+
+async function getChannelClips(userId, limit){
+  limit=limit||20;
+  var d=await tGet('/clips?broadcaster_id='+userId+'&first='+limit);
+  return d.data||[];
 }
 
 // ── CHAT ──────────────────────────────────────────────────────
@@ -1023,57 +1051,47 @@ async function analyze(){
   allClips=[];
 
   try{
-    if(!twitchToken && !twitchClientId){
+    if(!twitchClientId){
       throw new Error('Twitch credentials required. Click SETUP KEYS above.');
     }
 
     var parsed=parseUrl(raw);
-    if(!parsed) throw new Error('Could not parse URL. Try: twitch.tv/videos/123456789');
+    if(!parsed) throw new Error('Could not parse URL. Try: twitch.tv/videos/123456789 or twitch.tv/channelname');
 
-    addLog('Connecting to Twitch...','info');
-    var vod;
+    addLog('Connecting to Twitch...','');
+
+    // ── PATH A: Direct VOD ID ─────────────────────────────────
     if(parsed.type==='vod_id'){
-      addLog('Fetching VOD '+parsed.value+'...','info');
-      vod=await getVodById(parsed.value);
-    } else {
-      addLog('Looking up channel: '+parsed.value+'...','info');
-      vod=await getLatestVod(parsed.value);
+      addLog('Fetching VOD '+parsed.value+'...','');
+      var vod=await getVodById(parsed.value);
+      addLog('Found: "'+vod.title+'" ('+vod.duration+')','ok');
+      currentVodData=vod;
+      await analyzeVod(vod);
+      return;
     }
-    addLog('Found: "'+vod.title+'" ('+vod.duration+')','ok');
-    currentVodData=vod;
 
-    var durSec=parseDur(vod.duration)||7200;
+    // ── PATH B: Channel name — detect mode ───────────────────
+    var channel=parsed.value;
+    addLog('Looking up channel: '+channel+'...','');
+    var user=await getUser(channel);
 
-    addLog('Fetching chat logs...','info');
-    var msgs=await fetchChat(vod.id);
-    if(msgs) addLog('Loaded '+msgs.length+' chat messages','ok');
-
-    addLog('Analyzing chat spikes...','info');
-    var buckets=buildBuckets(msgs,durSec,80);
-    var spikes=findSpikes(buckets,8);
-    addLog('Found '+spikes.length+' spike moments','ok');
-
-    addLog('Running Claude AI analysis...','info');
-    var analysis=await callClaude(vod,spikes,buckets,durSec,msgs);
-    addLog('AI analysis complete','ok');
-
-    var {data:savedVod} = await sb.from('vods').upsert({
-      user_id:currentUser.id,
-      twitch_vod_id:vod.id,
-      title:vod.title,
-      game:vod.game_name||'Unknown',
-      duration:vod.duration,
-      view_count:vod.view_count,
-      status:'analyzed'
-    },{onConflict:'twitch_vod_id'}).select().single();
-
-    addLog('VOD saved to your account','ok');
-
-    document.getElementById('loadBox').className='load-box';
-    document.getElementById('analyzeBtn').disabled=false;
-    document.getElementById('analyzeBtn').textContent='FIND CLIPS';
-
-    renderResults(vod,analysis,buckets,spikes,durSec,savedVod);
+    if(appMode==='live'){
+      // ── LIVE MODE ──────────────────────────────────────────
+      addLog('Checking if '+user.display_name+' is live...','');
+      var stream=await getLiveStream(user.id);
+      if(!stream){
+        addLog(user.display_name+' is not live — switching to VOD/clips mode','warn');
+        // Fall through to VOD/clips path
+        await analyzeChannelFallback(user);
+      } else {
+        addLog('LIVE: '+stream.title+' — '+stream.viewer_count+' viewers','ok');
+        currentVodData={id:null,user_id:user.id,user_name:user.display_name,title:stream.title,game_name:stream.game_name,duration:'LIVE',view_count:stream.viewer_count,isLive:true,broadcasterId:user.id};
+        await analyzeLive(user, stream);
+      }
+    } else {
+      // ── VOD MODE with fallback ──────────────────────────────
+      await analyzeChannelFallback(user);
+    }
 
   }catch(e){
     document.getElementById('loadBox').className='load-box';
@@ -1083,13 +1101,182 @@ async function analyze(){
   }
 }
 
+// ── VOD with fallback to existing clips ──────────────────────
+async function analyzeChannelFallback(user){
+  addLog('Fetching latest VOD...','');
+  var vod=await getLatestVod(user.id);
+
+  if(vod){
+    addLog('Found VOD: "'+vod.title+'" ('+vod.duration+')','ok');
+    currentVodData=vod;
+    await analyzeVod(vod);
+  } else {
+    // VODs disabled or sub-only — fall back to existing clips
+    addLog('VODs unavailable — fetching existing Twitch clips instead','warn');
+    await analyzeExistingClips(user);
+  }
+}
+
+// ── ANALYZE A VOD ─────────────────────────────────────────────
+async function analyzeVod(vod){
+  var durSec=parseDur(vod.duration)||7200;
+
+  addLog('Fetching chat logs...','');
+  var msgs=await fetchChat(vod.id);
+  if(msgs) addLog('Loaded '+msgs.length+' chat messages','ok');
+  else addLog('No chat data — using spike simulation','warn');
+
+  addLog('Analyzing chat spikes...','');
+  var buckets=buildBuckets(msgs,durSec,80);
+  var spikes=findSpikes(buckets,8);
+  addLog('Found '+spikes.length+' spike moments','ok');
+
+  addLog('Running Claude AI analysis...','');
+  var analysis=await callClaude(vod,spikes,buckets,durSec,msgs);
+  addLog('AI analysis complete — '+analysis.clips.length+' clips found','ok');
+
+  var {data:savedVod}=await sb.from('vods').upsert({
+    user_id:currentUser.id,
+    twitch_vod_id:vod.id,
+    title:vod.title,
+    game:vod.game_name||'Unknown',
+    duration:vod.duration,
+    view_count:vod.view_count,
+    status:'analyzed'
+  },{onConflict:'twitch_vod_id'}).select().single();
+
+  addLog('Saved to your account','ok');
+  doneLoading();
+  renderResults(vod,analysis,buckets,spikes,durSec,savedVod);
+}
+
+// ── ANALYZE LIVE STREAM ───────────────────────────────────────
+async function analyzeLive(user, stream){
+  addLog('Building live clip suggestions...','');
+
+  // For live streams we generate clip suggestions based on stream info
+  // User can hit CREATE CLIP at any moment to clip right now
+  var fakeVod={id:null,user_id:user.id,user_name:user.display_name,title:stream.title,game_name:stream.game_name,duration:'LIVE',view_count:stream.viewer_count,isLive:true};
+  var durSec=3600; // Assume 1hr window
+  var buckets=buildBuckets(null,durSec,80);
+  var spikes=findSpikes(buckets,8);
+
+  addLog('Running Claude AI analysis on live stream...','');
+  var analysis=await callClaudeLive(user, stream);
+  addLog('Live analysis complete','ok');
+
+  var {data:savedVod}=await sb.from('vods').upsert({
+    user_id:currentUser.id,
+    twitch_vod_id:'live_'+user.id,
+    title:'LIVE: '+stream.title,
+    game:stream.game_name||'Unknown',
+    duration:'LIVE',
+    view_count:stream.viewer_count,
+    status:'live'
+  },{onConflict:'twitch_vod_id'}).select().single();
+
+  doneLoading();
+  renderResults(fakeVod,analysis,buckets,spikes,durSec,savedVod);
+}
+
+// ── ANALYZE EXISTING CLIPS (VOD fallback) ────────────────────
+async function analyzeExistingClips(user){
+  addLog('Fetching top clips from '+user.display_name+'...','');
+  var clips=await getChannelClips(user.id, 20);
+  if(!clips.length) throw new Error('No clips found for this channel either. The channel may be very new.');
+
+  addLog('Found '+clips.length+' existing clips — scoring with AI...','ok');
+
+  var prompt='You are an expert Twitch clip analyst. Analyze these existing Twitch clips and rank the best ones for reposting.
+
+Channel: '+user.display_name+'
+Existing clips:
+'+JSON.stringify(clips.map(function(c){return {title:c.title,views:c.view_count,duration:c.duration,game:c.game_name,created:c.created_at};}),null,2)+'
+
+Rank the top 5 clips for viral/repost potential. For each, suggest an improved title and caption strategy.
+
+Respond ONLY with valid JSON:
+{"summary":"2-3 sentence channel analysis","clips":[{"type":"hype|funny|info|rage","score":92,"timestamp":"0:00","duration":"'+clips[0].duration+'","title":"Improved punchy title","tags":["TAG1","TAG2"],"bg":"purple|teal|orange|blue","chat_intensity":85,"original_url":"'+clips[0].url+'","clip_id":"'+clips[0].id+'"}]}';
+
+  var r=await fetch('https://twitch-proxy.igregg96.workers.dev/claude',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,messages:[{role:'user',content:prompt}]})
+  });
+  var d=await r.json();
+  var txt=d.content.map(function(i){return i.text||'';}).join('');
+  var analysis=JSON.parse(txt.replace(/```json|```/g,'').trim());
+
+  // Attach real clip URLs from Twitch data
+  analysis.clips=analysis.clips.map(function(c,i){
+    var orig=clips[i]||clips[0];
+    return Object.assign({},c,{
+      originalClipUrl: orig.url,
+      twitchClipId: orig.id,
+      embedUrl: orig.embed_url,
+      thumbnail: orig.thumbnail_url
+    });
+  });
+
+  var fakeVod={id:user.id,user_id:user.id,user_name:user.display_name,title:user.display_name+"'s Top Clips",game_name:'Various',duration:clips.length+'  clips analyzed',view_count:clips.reduce(function(a,c){return a+c.view_count;},0),isClipsMode:true};
+  currentVodData=fakeVod;
+
+  var durSec=3600;
+  var buckets=buildBuckets(null,durSec,80);
+  var spikes=findSpikes(buckets,8);
+
+  var {data:savedVod}=await sb.from('vods').upsert({
+    user_id:currentUser.id,
+    twitch_vod_id:'clips_'+user.id,
+    title:"Top Clips: "+user.display_name,
+    game:'Various',
+    duration:clips.length+' clips',
+    view_count:fakeVod.view_count,
+    status:'analyzed'
+  },{onConflict:'twitch_vod_id'}).select().single();
+
+  addLog('Clip analysis complete','ok');
+  doneLoading();
+  renderResults(fakeVod,analysis,buckets,spikes,durSec,savedVod);
+}
+
+async function callClaudeLive(user, stream){
+  var prompt='You are an expert Twitch clip analyst. A streamer is currently LIVE. Suggest 5 ideal clip moments to create RIGHT NOW based on stream context.
+
+Stream: "'+stream.title+'" by '+user.display_name+'
+Game: '+(stream.game_name||'Unknown')+'
+Viewers: '+stream.viewer_count+'
+
+Suggest 5 clip types that would perform well for this kind of stream. These will be created as live clips.
+
+Respond ONLY with valid JSON:
+{"summary":"2-3 sentence live stream analysis","clips":[{"type":"hype|funny|info|rage","score":92,"timestamp":"LIVE","duration":"0:30","title":"Short punchy title for live clip","tags":["TAG1","TAG2"],"bg":"purple|teal|orange|blue","chat_intensity":85}]}';
+
+  var r=await fetch('https://twitch-proxy.igregg96.workers.dev/claude',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+  });
+  var d=await r.json();
+  var txt=d.content.map(function(i){return i.text||'';}).join('');
+  return JSON.parse(txt.replace(/```json|```/g,'').trim());
+}
+
+function doneLoading(){
+  document.getElementById('loadBox').className='load-box';
+  document.getElementById('analyzeBtn').disabled=false;
+  document.getElementById('analyzeBtn').textContent='FIND CLIPS';
+}
+
 // ── RENDER RESULTS ─────────────────────────────────────────────
 function renderResults(vod,analysis,buckets,spikes,durSec,savedVod){
   document.getElementById('streamTitle').textContent=vod.title;
-  document.getElementById('streamMeta').textContent=vod.user_name+' \u00b7 '+vod.duration+' \u00b7 '+Number(vod.view_count).toLocaleString()+' views';
+  var isLive=vod.isLive||false;
+  var isClips=vod.isClipsMode||false;
+  var metaViews=isLive?(vod.view_count.toLocaleString()+' viewers'):(Number(vod.view_count).toLocaleString()+' views');
+  document.getElementById('streamMeta').textContent=vod.user_name+' \u00b7 '+vod.duration+' \u00b7 '+metaViews;
   var tb=document.getElementById('streamBadge');
-  tb.textContent=appMode==='live'?'LIVE':'VOD';
-  tb.className='tb '+(appMode==='live'?'tb-l':'tb-v');
+  if(isLive){tb.textContent='🔴 LIVE';tb.className='tb tb-l';}
+  else if(isClips){tb.textContent='CLIPS';tb.className='tb tb-v';}
+  else{tb.textContent='VOD';tb.className='tb tb-v';}
   document.getElementById('aiSummary').textContent=analysis.summary||'';
   renderChart(buckets,spikes,durSec);
 
@@ -1154,10 +1341,32 @@ function openEditor(idx){
   document.getElementById('trimEndIn').value = fts(trimEnd);
   updateTrimUI();
 
-  // Load Twitch player
+  // Load Twitch player — handle VOD, live, and existing clips
   var vodId = clip.vodTwitchId || '';
-  if(vodId){
-    var playerUrl = 'https://player.twitch.tv/?video='+vodId+'&t='+fts(startSec)+'&autoplay=false&parent='+window.location.hostname;
+  var playerUrl = '';
+  if(clip.originalClipUrl && clip.twitchClipId){
+    // Existing clip mode — embed the actual Twitch clip
+    playerUrl = 'https://clips.twitch.tv/embed?clip='+clip.twitchClipId+'&parent='+window.location.hostname+'&autoplay=false';
+    // Pre-fill the clip link since we already have it
+    document.getElementById('clipLinkBox').style.display = 'block';
+    document.getElementById('clipLinkUrl').textContent = clip.originalClipUrl;
+    document.getElementById('clipLinkUrl').href = clip.originalClipUrl;
+    var createBtn = document.getElementById('createClipBtn');
+    createBtn.textContent = '✓ CLIP ALREADY EXISTS';
+    createBtn.style.background = 'var(--s2)';
+    createBtn.style.color = 'var(--mu)';
+    createBtn.style.border = '1px solid var(--border)';
+    createBtn.disabled = true;
+  } else if(currentVodData && currentVodData.isLive){
+    // Live mode — embed the live channel
+    playerUrl = 'https://player.twitch.tv/?channel='+currentVodData.user_name+'&parent='+window.location.hostname+'&autoplay=false';
+    var createBtn = document.getElementById('createClipBtn');
+    createBtn.textContent = '🔴 CLIP THIS MOMENT NOW';
+    createBtn.style.background = '#ff4500';
+  } else if(vodId){
+    playerUrl = 'https://player.twitch.tv/?video='+vodId+'&t='+fts(startSec)+'&autoplay=false&parent='+window.location.hostname;
+  }
+  if(playerUrl){
     document.getElementById('twitchPlayer').src = playerUrl;
     document.getElementById('twitchPlayer916').src = playerUrl;
   }
