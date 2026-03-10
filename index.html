@@ -198,7 +198,70 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .toast{position:fixed;bottom:22px;right:22px;background:var(--s1);border:1px solid var(--a2);padding:11px 16px;font-family:'Space Mono',monospace;font-size:11px;color:var(--a2);z-index:300;opacity:0;transform:translateY(8px);transition:all .3s;pointer-events:none}
 .toast.show{opacity:1;transform:translateY(0)}
 
+/* EDITOR MODAL */
+.editor-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.editor-overlay.open{display:flex;animation:fu .25s ease}
+.editor-modal{background:var(--s1);border:1px solid var(--border);width:100%;max-width:1100px;max-height:90vh;overflow-y:auto;display:grid;grid-template-columns:1fr 340px;position:relative}
+.editor-close{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--mu);font-size:20px;cursor:pointer;z-index:10;line-height:1}
+.editor-close:hover{color:var(--text)}
+.editor-left{padding:24px;border-right:1px solid var(--border)}
+.editor-right{padding:24px;display:flex;flex-direction:column;gap:16px}
+.ed-title{font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:2px;margin-bottom:3px}
+.ed-title span{color:var(--ac)}
+.ed-sub{font-family:'Space Mono',monospace;font-size:9px;color:var(--mu);letter-spacing:1.5px;margin-bottom:18px}
+
+/* VIDEO PREVIEW */
+.preview-wrap{position:relative;background:#000;border:1px solid var(--border);margin-bottom:14px;overflow:hidden}
+.preview-16-9{aspect-ratio:16/9;width:100%}
+.preview-9-16{width:180px;aspect-ratio:9/16;margin:0 auto;position:relative;overflow:hidden;border:2px solid var(--ac)}
+.preview-9-16 iframe{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(1.8);width:100%;height:100%}
+.crop-toggle{display:flex;gap:4px;margin-bottom:10px}
+.ct-btn{font-family:'Space Mono',monospace;font-size:10px;padding:5px 12px;border:1px solid var(--border);color:var(--mu);cursor:pointer;background:none;transition:all .15s}
+.ct-btn.active{border-color:var(--ac);color:var(--ac);background:rgba(145,71,255,.08)}
+
+/* TRIM */
+.trim-section{margin-bottom:16px}
+.trim-label{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--mu);margin-bottom:8px}
+.trim-bar{position:relative;height:32px;background:var(--s2);border:1px solid var(--border);cursor:pointer;margin-bottom:8px}
+.trim-fill{position:absolute;top:0;bottom:0;background:rgba(145,71,255,.3);border:1px solid var(--ac)}
+.trim-handle{position:absolute;top:0;bottom:0;width:8px;background:var(--ac);cursor:ew-resize;display:flex;align-items:center;justify-content:center}
+.trim-handle::after{content:'';width:2px;height:14px;background:#fff;border-radius:1px}
+.trim-times{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:10px;color:var(--ac)}
+.trim-inputs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.trim-inputs input{background:var(--s2);border:1px solid var(--border);color:var(--text);font-family:'Space Mono',monospace;font-size:11px;padding:7px 10px;text-align:center;outline:none;width:100%}
+.trim-inputs input:focus{border-color:var(--ac)}
+
+/* CAPTIONS */
+.caption-section{}
+.caption-label{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--mu);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.caption-label button{font-family:'Space Mono',monospace;font-size:9px;padding:3px 8px;border:1px solid var(--ac);color:var(--ac);background:rgba(145,71,255,.08);cursor:pointer}
+.caption-label button:hover{background:var(--ac);color:#fff}
+.caption-list{display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto;margin-bottom:8px}
+.caption-item{display:grid;grid-template-columns:70px 1fr 24px;gap:4px;align-items:center}
+.caption-item input{background:var(--s2);border:1px solid var(--border);color:var(--text);font-family:'DM Sans',sans-serif;font-size:12px;padding:5px 8px;outline:none;width:100%}
+.caption-item input:focus{border-color:var(--ac)}
+.caption-item button{background:none;border:none;color:var(--mu);cursor:pointer;font-size:14px;padding:4px}
+.caption-item button:hover{color:var(--danger)}
+.caption-overlay{position:absolute;bottom:12%;left:0;right:0;text-align:center;pointer-events:none;padding:0 8px}
+.caption-text{display:inline-block;background:rgba(0,0,0,.85);color:#fff;font-family:'DM Sans',sans-serif;font-weight:700;font-size:clamp(10px,2vw,18px);padding:4px 10px;border-radius:2px;letter-spacing:.5px}
+
+/* STYLE PANEL */
+.style-section{}
+.style-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.style-chip{font-family:'Space Mono',monospace;font-size:9px;padding:4px 10px;border:1px solid var(--border);color:var(--mu);cursor:pointer;background:none;transition:all .15s}
+.style-chip.active{border-color:var(--ac);color:var(--ac);background:rgba(145,71,255,.08)}
+.color-row{display:flex;gap:6px}
+.color-dot{width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .15s}
+.color-dot.active{border-color:#fff;transform:scale(1.2)}
+
+/* EXPORT */
+.export-btn{width:100%;background:var(--ac);color:#fff;border:none;padding:13px;font-family:'Space Mono',monospace;font-size:12px;letter-spacing:1px;cursor:pointer;transition:background .15s;margin-top:auto}
+.export-btn:hover{background:#a855ff}
+.copy-btn{width:100%;background:none;border:1px solid var(--border);color:var(--mu);padding:10px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:1px;cursor:pointer;transition:all .15s;margin-top:6px}
+.copy-btn:hover{border-color:var(--a2);color:var(--a2)}
+
 @media(max-width:680px){.clips-grid{grid-template-columns:repeat(2,1fr)}.stats-grid{grid-template-columns:repeat(2,1fr)}.dash-grid{grid-template-columns:1fr}.clip-row{grid-template-columns:52px 1fr auto}.cg{grid-template-columns:1fr}.nav-links{display:none}}
+
 </style>
 </head>
 <body>
@@ -239,6 +302,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
     </div>
     <div class="nav-r">
       <div class="plan-chip">FREE</div>
+      <button class="btn-sm" id="twitchAuthBtn" onclick="twitchOAuth()" style="border-color:rgba(145,71,255,.4);color:var(--ac);font-size:9px">&#9654; CONNECT TWITCH</button>
       <div class="nav-email" id="navEmail"></div>
       <button class="btn-so" onclick="signOut()">SIGN OUT</button>
     </div>
@@ -344,15 +408,126 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
   <!-- QUEUE -->
   <div class="main" id="queueView" style="display:none">
     <div class="pg-title">CLIP <span>QUEUE</span></div>
-    <div class="pg-sub">MANAGE AND PREPARE YOUR CLIPS FOR POSTING</div>
+    <div class="pg-sub">YOUR CLIPS READY TO SHARE</div>
+
+    <!-- Twitch connect banner for queue -->
+    <div id="qTwitchBanner" style="display:none;background:rgba(145,71,255,.08);border:1px solid rgba(145,71,255,.3);padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <p style="font-family:'Space Mono',monospace;font-size:10px;color:var(--mu);letter-spacing:1px">CONNECT TWITCH to create clips directly from your VODs</p>
+      <button class="btn-sm prim" onclick="twitchOAuth()">&#9654; CONNECT TWITCH</button>
+    </div>
+
     <div class="q-hdr">
       <div class="q-stat">QUEUE &mdash; <span id="qReadyCount">0 READY</span></div>
       <div style="display:flex;gap:7px">
         <button class="btn-sm" onclick="loadQueue()">&#8635; REFRESH</button>
-        <button class="btn-sm prim" onclick="toast('Scheduler coming soon')">SCHEDULE ALL READY</button>
       </div>
     </div>
-    <div class="clips-list" id="queueList"><div class="empty" style="background:var(--s1);border:1px solid var(--border);padding:40px">No clips in queue yet. Analyze a VOD and save clips to get started.</div></div>
+    <div class="clips-list" id="queueList"><div class="empty" style="background:var(--s1);border:1px solid var(--border);padding:40px">No clips in queue yet. Analyze a VOD, open the editor, and create a Twitch clip.</div></div>
+  </div>
+</div>
+
+<!-- EDITOR MODAL -->
+<div class="editor-overlay" id="editorOverlay">
+  <div class="editor-modal">
+    <button class="editor-close" onclick="closeEditor()">&#10005;</button>
+
+    <!-- LEFT: PREVIEW + TRIM -->
+    <div class="editor-left">
+      <div class="ed-title">CLIP <span>EDITOR</span></div>
+      <div class="ed-sub" id="edClipTitle">-</div>
+
+      <div class="crop-toggle">
+        <button class="ct-btn active" id="crop169" onclick="setCrop('16:9')">16:9</button>
+        <button class="ct-btn" id="crop916" onclick="setCrop('9:16')">9:16 TIKTOK</button>
+      </div>
+
+      <div class="preview-wrap" id="previewWrap">
+        <div class="preview-16-9" id="preview169">
+          <iframe id="twitchPlayer" src="" width="100%" height="100%" allowfullscreen frameborder="0"></iframe>
+          <div class="caption-overlay" id="captionOverlay916" style="display:none"><span class="caption-text" id="captionPreviewText"></span></div>
+        </div>
+        <div class="preview-9-16" id="preview916" style="display:none">
+          <iframe id="twitchPlayer916" src="" width="100%" height="100%" allowfullscreen frameborder="0"></iframe>
+          <div class="caption-overlay"><span class="caption-text" id="captionPreviewText916"></span></div>
+        </div>
+        <div class="caption-overlay" id="captionOverlay169"><span class="caption-text" id="captionPreviewText169"></span></div>
+      </div>
+
+      <div class="trim-section">
+        <div class="trim-label">TRIM CLIP</div>
+        <div class="trim-bar" id="trimBar" onmousedown="trimBarClick(event)">
+          <div class="trim-fill" id="trimFill"></div>
+          <div class="trim-handle" id="trimHandleL" style="left:0%" onmousedown="startDrag(event,'L')"></div>
+          <div class="trim-handle" id="trimHandleR" style="left:100%;transform:translateX(-100%)" onmousedown="startDrag(event,'R')"></div>
+        </div>
+        <div class="trim-times">
+          <span id="trimStartLbl">0:00</span>
+          <span id="trimDurLbl">0:30</span>
+          <span id="trimEndLbl">0:30</span>
+        </div>
+        <div class="trim-inputs">
+          <input type="text" id="trimStartIn" placeholder="0:00" onchange="trimInputChange()"/>
+          <input type="text" id="trimEndIn" placeholder="0:30" onchange="trimInputChange()"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: CAPTIONS + STYLE + EXPORT -->
+    <div class="editor-right">
+      <div class="caption-section">
+        <div class="caption-label">
+          CAPTIONS
+          <button onclick="addCaption()">+ ADD</button>
+        </div>
+        <div class="caption-list" id="captionList"></div>
+      </div>
+
+      <div class="style-section">
+        <div class="trim-label" style="margin-bottom:8px">CAPTION STYLE</div>
+        <div class="style-row" id="captionStyleRow">
+          <button class="style-chip active" onclick="setCapStyle('bold',this)">BOLD</button>
+          <button class="style-chip" onclick="setCapStyle('outline',this)">OUTLINE</button>
+          <button class="style-chip" onclick="setCapStyle('highlight',this)">HIGHLIGHT</button>
+          <button class="style-chip" onclick="setCapStyle('minimal',this)">MINIMAL</button>
+        </div>
+        <div class="trim-label" style="margin-bottom:8px">CAPTION COLOR</div>
+        <div class="color-row">
+          <div class="color-dot active" style="background:#fff" onclick="setCapColor('#fff',this)"></div>
+          <div class="color-dot" style="background:#9147ff" onclick="setCapColor('#9147ff',this)"></div>
+          <div class="color-dot" style="background:#00f5d4" onclick="setCapColor('#00f5d4',this)"></div>
+          <div class="color-dot" style="background:#ff4500" onclick="setCapColor('#ff4500',this)"></div>
+          <div class="color-dot" style="background:#f59e0b" onclick="setCapColor('#f59e0b',this)"></div>
+        </div>
+      </div>
+
+      <div class="style-section">
+        <div class="trim-label" style="margin-bottom:8px">HASHTAGS</div>
+        <input type="text" id="hashtagInput" placeholder="#twitch #gaming #clips" style="width:100%;background:var(--s2);border:1px solid var(--border);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 12px;outline:none" onfocus="this.style.borderColor='var(--ac)'" onblur="this.style.borderColor='var(--border)'"/>
+      </div>
+
+      <div class="style-section">
+        <div class="trim-label" style="margin-bottom:8px">CLIP INFO</div>
+        <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--mu);line-height:2">
+          <div>TIMESTAMP: <span style="color:var(--ac)" id="edTimestamp">-</span></div>
+          <div>DURATION: <span style="color:var(--ac)" id="edDuration">-</span></div>
+          <div>SCORE: <span style="color:var(--ac)" id="edScore">-</span></div>
+          <div>TYPE: <span style="color:var(--ac)" id="edType">-</span></div>
+        </div>
+      </div>
+
+      <div style="margin-top:auto;display:flex;flex-direction:column;gap:6px">
+        <button class="export-btn" id="createClipBtn" onclick="createTwitchClip()" style="background:var(--ac);font-size:13px;padding:15px">&#9654; CREATE CLIP ON TWITCH</button>
+        <div id="clipLinkBox" style="display:none;background:var(--s2);border:1px solid rgba(0,245,212,.3);padding:10px;font-family:'Space Mono',monospace;font-size:10px">
+          <div style="color:var(--mu);margin-bottom:5px;letter-spacing:1px">CLIP LINK</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <a id="clipLinkUrl" href="#" target="_blank" style="color:var(--a2);flex:1;word-break:break-all;text-decoration:none;font-size:10px">-</a>
+            <button onclick="copyClipLink()" style="background:none;border:1px solid var(--a2);color:var(--a2);font-family:'Space Mono',monospace;font-size:9px;padding:4px 8px;cursor:pointer;white-space:nowrap">COPY</button>
+          </div>
+        </div>
+        <button class="copy-btn" onclick="copyClipInfo()">&#9776; COPY TIMESTAMPS + CAPTION</button>
+        <button class="export-btn" style="background:var(--s2);color:var(--mu);border:1px solid var(--border);font-size:11px" onclick="saveAndClose()">&#10003; SAVE TO QUEUE</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -380,11 +555,40 @@ var currentUser = null;
 var appMode = 'vod';
 var twitchToken = null;
 var twitchClientId = null;
+var twitchUserToken = null; // OAuth user token for creating clips
 var allClips = [];
 var currentVodData = null;
 
+// EDITOR STATE
+var editorClip = null;
+var editorIdx = -1;
+var trimStart = 0;
+var trimEnd = 30;
+var trimTotal = 30;
+var capStyle = 'bold';
+var capColor = '#fff';
+var captions = [];
+var cropMode = '16:9';
+var dragging = null;
+
 // ── INIT ─────────────────────────────────────────────────────
 (async function(){
+  // Check for Twitch OAuth callback token in URL hash
+  var hash = window.location.hash;
+  if(hash && hash.includes('access_token')){
+    var params = new URLSearchParams(hash.replace('#',''));
+    var tok = params.get('access_token');
+    if(tok){
+      twitchUserToken = tok;
+      sessionStorage.setItem('clipd_user_tok', tok);
+      // Clean URL
+      history.replaceState(null,'',window.location.pathname);
+    }
+  }
+  // Restore saved user token
+  var saved = sessionStorage.getItem('clipd_user_tok');
+  if(saved) twitchUserToken = saved;
+
   var {data:{session}} = await sb.auth.getSession();
   if(session){bootApp(session.user);}
   sb.auth.onAuthStateChange(function(_,session){
@@ -408,8 +612,25 @@ function bootApp(user){
   appPage.classList.add('active');
   appPage.style.display = 'block';
   document.getElementById('navEmail').textContent = user.email.split('@')[0].toUpperCase();
+  updateTwitchAuthUI();
   showView('dash');
   loadDashboard();
+}
+
+function updateTwitchAuthUI(){
+  var btn = document.getElementById('twitchAuthBtn');
+  if(!btn) return;
+  if(twitchUserToken){
+    btn.textContent = '✓ TWITCH LINKED';
+    btn.style.borderColor = 'rgba(0,245,212,.4)';
+    btn.style.color = 'var(--a2)';
+    btn.onclick = function(){ if(confirm('Disconnect Twitch account?')){ twitchUserToken=null; sessionStorage.removeItem('clipd_user_tok'); updateTwitchAuthUI(); }};
+  } else {
+    btn.textContent = '▶ CONNECT TWITCH';
+    btn.style.borderColor = 'rgba(145,71,255,.4)';
+    btn.style.color = 'var(--ac)';
+    btn.onclick = twitchOAuth;
+  }
 }
 
 // ── AUTH ─────────────────────────────────────────────────────
@@ -558,6 +779,113 @@ async function getToken(id,secret){
     var d = await r.json();
     return d.access_token||null;
   }catch(e){return null;}
+}
+
+// ── TWITCH OAUTH ──────────────────────────────────────────────
+function twitchOAuth(){
+  if(!twitchClientId){
+    toast('Enter your Twitch Client ID first in SETUP KEYS');
+    return;
+  }
+  var redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
+  var scopes = encodeURIComponent('clips:edit user:read:email');
+  var url = 'https://id.twitch.tv/oauth2/authorize?client_id='+twitchClientId+'&redirect_uri='+redirectUri+'&response_type=token&scope='+scopes;
+  window.location.href = url;
+}
+
+// ── CREATE TWITCH CLIP ────────────────────────────────────────
+async function createTwitchClip(){
+  if(!twitchUserToken){
+    // Prompt OAuth
+    if(confirm('You need to connect your Twitch account to create clips.\n\nClick OK to connect now.')){
+      twitchOAuth();
+    }
+    return;
+  }
+  if(!editorClip || !editorClip.vodTwitchId){
+    toast('No VOD linked to this clip');
+    return;
+  }
+
+  var btn = document.getElementById('createClipBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ CREATING CLIP...';
+
+  try{
+    // Twitch Create Clip API requires broadcaster_id (user_id of the channel)
+    // We need to get the user_id from the VOD first
+    var vodResp = await fetch('https://api.twitch.tv/helix/videos?id='+editorClip.vodTwitchId, {
+      headers:{'Client-ID':twitchClientId,'Authorization':'Bearer '+twitchUserToken}
+    });
+    var vodData = await vodResp.json();
+    if(!vodData.data || !vodData.data.length) throw new Error('VOD not found');
+    var broadcasterId = vodData.data[0].user_id;
+
+    // Create the clip
+    var clipResp = await fetch('https://api.twitch.tv/helix/clips?broadcaster_id='+broadcasterId+'&has_delay=false', {
+      method:'POST',
+      headers:{'Client-ID':twitchClientId,'Authorization':'Bearer '+twitchUserToken}
+    });
+    var clipData = await clipResp.json();
+
+    if(clipData.data && clipData.data.length){
+      var clipId = clipData.data[0].id;
+      var editUrl = clipData.data[0].edit_url;
+      var clipUrl = 'https://clips.twitch.tv/'+clipId;
+
+      // Show link in editor
+      document.getElementById('clipLinkBox').style.display = 'block';
+      document.getElementById('clipLinkUrl').textContent = clipUrl;
+      document.getElementById('clipLinkUrl').href = clipUrl;
+
+      // Save to Supabase with the clip link
+      if(currentUser){
+        await sb.from('clips').insert({
+          user_id:currentUser.id,
+          vod_id:editorClip.vodId||null,
+          title:editorClip.title,
+          type:editorClip.type,
+          score:editorClip.score,
+          timestamp_start:fts(Math.round(trimStart)),
+          duration:Math.round(trimEnd-trimStart),
+          overlay_text:captions.length?captions[0].text:editorClip.title,
+          status:'ready',
+          captions:{list:captions,style:capStyle,color:capColor},
+          hashtags:document.getElementById('hashtagInput').value.split(' ').filter(Boolean),
+          chat_intensity:editorClip.chat_intensity||70,
+          bg:editorClip.bg||'purple',
+          clip_url:clipUrl,
+          edit_url:editUrl,
+          twitch_clip_id:clipId
+        });
+        loadDashboard();
+      }
+
+      btn.textContent = '✓ CLIP CREATED';
+      btn.style.background = 'var(--a2)';
+      btn.style.color = '#000';
+      toast('Clip created! Link ready to share ✔');
+
+    } else if(clipData.error){
+      throw new Error(clipData.message || clipData.error);
+    } else {
+      throw new Error('Clip creation failed — check your Twitch OAuth connection');
+    }
+  }catch(e){
+    btn.disabled = false;
+    btn.textContent = '▶ CREATE CLIP ON TWITCH';
+    btn.style.background = 'var(--ac)';
+    btn.style.color = '#fff';
+    toast('Error: '+e.message);
+  }
+}
+
+function copyClipLink(){
+  var url = document.getElementById('clipLinkUrl').textContent;
+  var hashtags = document.getElementById('hashtagInput').value;
+  var caption = captions.length ? captions[0].text : '';
+  var txt = (caption?caption+'\n\n':'')+url+(hashtags?'\n\n'+hashtags:'');
+  navigator.clipboard.writeText(txt).then(function(){toast('Copied link + caption ✔');});
 }
 
 // ── MODE ──────────────────────────────────────────────────────
@@ -729,7 +1057,6 @@ async function analyze(){
     var analysis=await callClaude(vod,spikes,buckets,durSec,msgs);
     addLog('AI analysis complete','ok');
 
-    // Save VOD to Supabase
     var {data:savedVod} = await sb.from('vods').upsert({
       user_id:currentUser.id,
       twitch_vod_id:vod.id,
@@ -766,7 +1093,7 @@ function renderResults(vod,analysis,buckets,spikes,durSec,savedVod){
   document.getElementById('aiSummary').textContent=analysis.summary||'';
   renderChart(buckets,spikes,durSec);
 
-  allClips=(analysis.clips||[]).map(function(c){return Object.assign({},c,{vodId:savedVod?savedVod.id:null,savedId:null});});
+  allClips=(analysis.clips||[]).map(function(c){return Object.assign({},c,{vodId:savedVod?savedVod.id:null,savedId:null,vodTwitchId:currentVodData?currentVodData.id:null});});
   document.getElementById('clipCountHdr').textContent=allClips.length+' CLIPS';
   renderClips(allClips);
 
@@ -786,7 +1113,7 @@ function renderClips(clips){
     var tc=tcm[clip.type]||'th';
     var tags=(clip.tags||[]).map(function(t){return '<span class="tag '+tc+'">'+t+'</span>';}).join('');
     var isSaved=clip.savedId;
-    return '<div class="clip-card">'+
+    return '<div class="clip-card" onclick="openEditor('+i+')" style="cursor:pointer">'+
       '<div class="ct"><div class="cbg '+bg+'"></div><div class="cp">&#9654;</div>'+
       '<div class="c-sc '+sc+'">'+clip.score+'</div>'+
       '<div class="c-chat">&#9650;CHAT x'+Math.max(1,Math.round((clip.chat_intensity||70)/20))+'</div>'+
@@ -796,10 +1123,233 @@ function renderClips(clips){
       '<div class="c-title">'+(clip.title||'Untitled')+'</div>'+
       '<div class="c-tags">'+tags+'</div>'+
       '<div class="c-actions">'+
-        '<button class="ca '+(isSaved?'saved':'post')+'" id="saveBtn'+i+'" onclick="saveClip('+i+',this)">'+(isSaved?'&#10003; SAVED':'SAVE')+'</button>'+
-        '<button class="ca" onclick="toast(\'Caption editor coming in next update\')">EDIT</button>'+
+        '<button class="ca '+(isSaved?'saved':'post')+'" id="saveBtn'+i+'" onclick="event.stopPropagation();saveClip('+i+',this)">'+(isSaved?'&#10003; SAVED':'SAVE')+'</button>'+
+        '<button class="ca" onclick="event.stopPropagation();openEditor('+i+')">EDIT</button>'+
       '</div></div></div>';
   }).join('');
+}
+
+// ── EDITOR ────────────────────────────────────────────────────
+function openEditor(idx){
+  var clip = allClips[idx];
+  if(!clip) return;
+  editorClip = clip;
+  editorIdx = idx;
+
+  // Set info
+  document.getElementById('edClipTitle').textContent = clip.title;
+  document.getElementById('edTimestamp').textContent = clip.timestamp||'0:00';
+  document.getElementById('edDuration').textContent = clip.duration||'0:30';
+  document.getElementById('edScore').textContent = clip.score;
+  document.getElementById('edType').textContent = (clip.type||'').toUpperCase();
+
+  // Parse timestamps
+  var startSec = parseTs(clip.timestamp||'0:00');
+  var durSec = parseDur2(clip.duration||'0:30');
+  trimTotal = durSec + 30;
+  trimStart = startSec;
+  trimEnd = startSec + durSec;
+
+  document.getElementById('trimStartIn').value = fts(trimStart);
+  document.getElementById('trimEndIn').value = fts(trimEnd);
+  updateTrimUI();
+
+  // Load Twitch player
+  var vodId = clip.vodTwitchId || '';
+  if(vodId){
+    var playerUrl = 'https://player.twitch.tv/?video='+vodId+'&t='+fts(startSec)+'&autoplay=false&parent='+window.location.hostname;
+    document.getElementById('twitchPlayer').src = playerUrl;
+    document.getElementById('twitchPlayer916').src = playerUrl;
+  }
+
+  // Default caption = clip title
+  captions = [{time:'0:00', text: clip.title}];
+  renderCaptions();
+  updateCaptionPreview();
+
+  // Reset hashtags
+  document.getElementById('hashtagInput').value = (clip.tags||[]).map(function(t){return '#'+t.toLowerCase();}).join(' ');
+
+  document.getElementById('editorOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  // Reset create clip button
+  var btn = document.getElementById('createClipBtn');
+  btn.disabled = false;
+  btn.textContent = '▶ CREATE CLIP ON TWITCH';
+  btn.style.background = 'var(--ac)';
+  btn.style.color = '#fff';
+  document.getElementById('clipLinkBox').style.display = 'none';
+}
+
+function closeEditor(){
+  document.getElementById('editorOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+  document.getElementById('twitchPlayer').src = '';
+  document.getElementById('twitchPlayer916').src = '';
+}
+
+function setCrop(mode){
+  cropMode = mode;
+  document.getElementById('crop169').className = 'ct-btn'+(mode==='16:9'?' active':'');
+  document.getElementById('crop916').className = 'ct-btn'+(mode==='9:16'?' active':'');
+  document.getElementById('preview169').style.display = mode==='16:9'?'block':'none';
+  document.getElementById('preview916').style.display = mode==='9:16'?'flex':'none';
+}
+
+// TRIM
+function updateTrimUI(){
+  var pctStart = trimTotal>0?((trimStart/trimTotal)*100):0;
+  var pctEnd = trimTotal>0?((trimEnd/trimTotal)*100):100;
+  document.getElementById('trimFill').style.left = pctStart+'%';
+  document.getElementById('trimFill').style.width = (pctEnd-pctStart)+'%';
+  document.getElementById('trimHandleL').style.left = pctStart+'%';
+  document.getElementById('trimHandleR').style.left = pctEnd+'%';
+  document.getElementById('trimStartLbl').textContent = fts(Math.round(trimStart));
+  document.getElementById('trimEndLbl').textContent = fts(Math.round(trimEnd));
+  document.getElementById('trimDurLbl').textContent = fts(Math.round(trimEnd-trimStart));
+  document.getElementById('trimStartIn').value = fts(Math.round(trimStart));
+  document.getElementById('trimEndIn').value = fts(Math.round(trimEnd));
+}
+
+function trimInputChange(){
+  var s = parseTs(document.getElementById('trimStartIn').value);
+  var e = parseTs(document.getElementById('trimEndIn').value);
+  if(s>=0 && e>s){ trimStart=s; trimEnd=e; updateTrimUI(); }
+}
+
+function startDrag(e, side){
+  e.preventDefault();
+  e.stopPropagation();
+  dragging = side;
+  document.addEventListener('mousemove', onDrag);
+  document.addEventListener('mouseup', stopDrag);
+}
+
+function onDrag(e){
+  if(!dragging) return;
+  var bar = document.getElementById('trimBar');
+  var rect = bar.getBoundingClientRect();
+  var pct = Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));
+  var val = pct * trimTotal;
+  if(dragging==='L'){ trimStart=Math.min(val,trimEnd-1); }
+  else { trimEnd=Math.max(val,trimStart+1); }
+  updateTrimUI();
+}
+
+function stopDrag(){ dragging=null; document.removeEventListener('mousemove',onDrag); document.removeEventListener('mouseup',stopDrag); }
+
+function trimBarClick(e){
+  if(e.target.classList.contains('trim-handle')) return;
+  var bar = document.getElementById('trimBar');
+  var rect = bar.getBoundingClientRect();
+  var pct = (e.clientX-rect.left)/rect.width;
+  var val = pct * trimTotal;
+  var midPct = ((trimStart+trimEnd)/2)/trimTotal;
+  if(pct < midPct){ trimStart=val; } else { trimEnd=val; }
+  updateTrimUI();
+}
+
+// CAPTIONS
+function renderCaptions(){
+  document.getElementById('captionList').innerHTML = captions.map(function(c,i){
+    return '<div class="caption-item">'+
+      '<input type="text" value="'+c.time+'" onchange="captions['+i+'].time=this.value;updateCaptionPreview()" placeholder="0:00"/>'+
+      '<input type="text" value="'+c.text.replace(/"/g,'&quot;')+'" onchange="captions['+i+'].text=this.value;updateCaptionPreview()" placeholder="Caption text..."/>'+
+      '<button onclick="removeCaption('+i+')">&#10005;</button>'+
+      '</div>';
+  }).join('');
+  updateCaptionPreview();
+}
+
+function addCaption(){
+  captions.push({time:'0:00',text:'Add caption here'});
+  renderCaptions();
+}
+
+function removeCaption(i){
+  captions.splice(i,1);
+  renderCaptions();
+}
+
+function updateCaptionPreview(){
+  var txt = captions.length?captions[0].text:'';
+  var styles = {
+    bold: 'background:rgba(0,0,0,.85);color:'+capColor+';font-weight:700;padding:4px 10px',
+    outline: 'background:transparent;color:'+capColor+';font-weight:700;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;padding:4px 10px',
+    highlight: 'background:'+capColor+';color:#000;font-weight:700;padding:4px 10px',
+    minimal: 'background:transparent;color:'+capColor+';font-weight:400;padding:4px 10px'
+  };
+  var style = styles[capStyle]||styles.bold;
+  document.getElementById('captionPreviewText169').textContent = txt;
+  document.getElementById('captionPreviewText169').style.cssText = style;
+  document.getElementById('captionPreviewText916').textContent = txt;
+  document.getElementById('captionPreviewText916').style.cssText = style;
+}
+
+function setCapStyle(style, el){
+  capStyle = style;
+  document.querySelectorAll('#captionStyleRow .style-chip').forEach(function(b){b.classList.remove('active');});
+  el.classList.add('active');
+  updateCaptionPreview();
+}
+
+function setCapColor(color, el){
+  capColor = color;
+  document.querySelectorAll('.color-dot').forEach(function(d){d.classList.remove('active');});
+  el.classList.add('active');
+  updateCaptionPreview();
+}
+
+// EXPORT
+function exportClip(){
+  if(!editorClip) return;
+  var info = {
+    title: editorClip.title,
+    vod_id: editorClip.vodTwitchId,
+    trim_start: fts(Math.round(trimStart)),
+    trim_end: fts(Math.round(trimEnd)),
+    duration: fts(Math.round(trimEnd-trimStart)),
+    crop: cropMode,
+    captions: captions,
+    hashtags: document.getElementById('hashtagInput').value,
+    score: editorClip.score,
+    type: editorClip.type
+  };
+  var blob = new Blob([JSON.stringify(info,null,2)],{type:'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'clip-'+editorClip.title.replace(/\s+/g,'-').toLowerCase()+'.json';
+  a.click();
+  toast('Clip info exported \u2714');
+}
+
+function copyClipInfo(){
+  if(!editorClip) return;
+  var txt = 'VOD: '+editorClip.vodTwitchId+'\nStart: '+fts(Math.round(trimStart))+'\nEnd: '+fts(Math.round(trimEnd))+'\nDuration: '+fts(Math.round(trimEnd-trimStart))+'\n'+document.getElementById('hashtagInput').value;
+  navigator.clipboard.writeText(txt).then(function(){toast('Copied to clipboard \u2714');});
+}
+
+async function saveAndClose(){
+  if(!editorClip||!currentUser) return;
+  var {data,error}=await sb.from('clips').insert({
+    user_id:currentUser.id,
+    vod_id:editorClip.vodId||null,
+    title:editorClip.title,
+    type:editorClip.type,
+    score:editorClip.score,
+    timestamp_start:fts(Math.round(trimStart)),
+    duration:Math.round(trimEnd-trimStart),
+    overlay_text:captions.length?captions[0].text:editorClip.title,
+    status:'ready',
+    captions:{list:captions,style:capStyle,color:capColor},
+    hashtags:document.getElementById('hashtagInput').value.split(' ').filter(Boolean),
+    chat_intensity:editorClip.chat_intensity||70,
+    bg:editorClip.bg||'purple'
+  }).select().single();
+  if(error){toast('Save failed: '+error.message);return;}
+  toast('Saved and marked READY \u2714');
+  closeEditor();
+  loadDashboard();
 }
 
 // ── SAVE CLIP ─────────────────────────────────────────────────
@@ -843,28 +1393,49 @@ function filterClips(type,el){
 async function loadQueue(){
   if(!currentUser) return;
   var {data:clips,error}=await sb.from('clips').select('*, vods(title,game)').eq('user_id',currentUser.id).order('created_at',{ascending:false});
+
+  // Show/hide Twitch connect banner
+  var banner = document.getElementById('qTwitchBanner');
+  if(banner) banner.style.display = twitchUserToken ? 'none' : 'flex';
+
   if(error){document.getElementById('queueList').innerHTML='<div class="empty" style="background:var(--s1);border:1px solid var(--border);padding:40px">Error loading queue.</div>';return;}
-  var ready=clips?clips.filter(function(c){return c.status==='ready'}).length:0;
-  document.getElementById('qReadyCount').textContent=(ready)+' READY';
-  if(!clips||!clips.length){document.getElementById('queueList').innerHTML='<div class="empty" style="background:var(--s1);border:1px solid var(--border);padding:40px">No clips yet. Analyze a VOD and save clips.</div>';return;}
+  var ready=clips?clips.filter(function(c){return c.status==='ready'||c.status==='posted'}).length:0;
+  document.getElementById('qReadyCount').textContent=ready+' READY';
+  if(!clips||!clips.length){document.getElementById('queueList').innerHTML='<div class="empty" style="background:var(--s1);border:1px solid var(--border);padding:40px">No clips yet. Analyze a VOD, open a clip in the editor, and hit CREATE CLIP ON TWITCH.</div>';return;}
   var bm={hype:'sh',funny:'sf',info:'si',rage:'sr'};
   document.getElementById('queueList').innerHTML=clips.map(function(c){
-    var sc='st-'+c.status;
+    var sc='st-'+(c.clip_url?'ready':c.status);
+    var linkSection = c.clip_url
+      ? '<div style="margin-top:7px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+
+          '<a href="'+c.clip_url+'" target="_blank" style="font-family:\'Space Mono\',monospace;font-size:9px;color:var(--a2);text-decoration:none;letter-spacing:.5px">▶ '+c.clip_url+'</a>'+
+          '<button class="btn-sm" style="font-size:9px;padding:3px 8px" onclick="copyQueueLink(\''+c.id+'\',\''+encodeURIComponent(c.clip_url)+'\',\''+encodeURIComponent((c.overlay_text||c.title))+'\',\''+encodeURIComponent((c.hashtags||[]).join(' '))+'\')">COPY</button>'+
+          (c.status!=='posted'?'<button class="btn-sm prim" style="font-size:9px;padding:3px 8px" onclick="markPosted(\''+c.id+'\',this)">MARK POSTED</button>':'<span style="font-family:\'Space Mono\',monospace;font-size:9px;color:var(--a2)">✓ POSTED</span>')+
+        '</div>'
+      : '<div style="margin-top:5px;font-family:\'Space Mono\',monospace;font-size:9px;color:var(--mu)">No Twitch clip yet — open editor to create one</div>';
     return '<div class="clip-row">'+
       '<div class="mt"><div class="mb2 '+bm[c.type]+'">'+c.score+'</div>&#9670;</div>'+
-      '<div class="ri"><h4>'+c.title+'</h4><p>'+(c.vods?c.vods.game:'Unknown')+' &middot; @'+c.timestamp_start+' &middot; '+fd(c.duration)+'</p></div>'+
-      '<div class="rs '+sc+'"><div class="sd"></div>'+c.status.toUpperCase()+'</div>'+
+      '<div class="ri"><h4>'+c.title+'</h4>'+
+        '<p>'+(c.vods?c.vods.game:'Unknown')+' &middot; @'+c.timestamp_start+' &middot; '+fd(c.duration)+'s</p>'+
+        linkSection+
+      '</div>'+
+      '<div class="rs '+sc+'"><div class="sd"></div>'+(c.clip_url?'READY':c.status).toUpperCase()+'</div>'+
       '<div class="ra">'+
-        '<button class="btn-sm" onclick="toggleReady(\''+c.id+'\',\''+c.status+'\',this)">'+(c.status==='ready'?'UNREADY':'MARK READY')+'</button>'+
         '<button class="btn-sm" onclick="deleteClip(\''+c.id+'\',this)">&#215;</button>'+
       '</div></div>';
   }).join('');
 }
 
-async function toggleReady(id,status,btn){
-  var newStatus=status==='ready'?'draft':'ready';
-  var {error}=await sb.from('clips').update({status:newStatus}).eq('id',id);
-  if(!error){toast(newStatus==='ready'?'Marked ready \u2714':'Moved back to draft');loadQueue();}
+function copyQueueLink(id, urlEnc, captionEnc, tagsEnc){
+  var url = decodeURIComponent(urlEnc);
+  var caption = decodeURIComponent(captionEnc);
+  var tags = decodeURIComponent(tagsEnc);
+  var txt = (caption?caption+'\n\n':'')+url+(tags?'\n\n'+tags:'');
+  navigator.clipboard.writeText(txt).then(function(){toast('Copied link + caption ✔');});
+}
+
+async function markPosted(id, btn){
+  var {error}=await sb.from('clips').update({status:'posted'}).eq('id',id);
+  if(!error){toast('Marked as posted ✔');loadQueue();loadDashboard();}
 }
 
 async function deleteClip(id,btn){
@@ -877,6 +1448,8 @@ async function deleteClip(id,btn){
 function fd(s){return Math.floor(s/60)+':'+(s%60<10?'0':'')+s%60;}
 function fts(s){var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;return h>0?h+':'+(m<10?'0':'')+m+':'+(sec<10?'0':'')+sec:m+':'+(sec<10?'0':'')+sec;}
 function parseDur(str){if(!str)return 0;var h=str.match(/(\d+)h/),m=str.match(/(\d+)m/),s=str.match(/(\d+)s/);return(h?parseInt(h[1])*3600:0)+(m?parseInt(m[1])*60:0)+(s?parseInt(s[1]):0);}
+function parseDur2(str){if(!str)return 30;var p=str.split(':').map(Number);if(p.length===3)return p[0]*3600+p[1]*60+p[2];if(p.length===2)return p[0]*60+p[1];return parseInt(str)||30;}
+function parseTs(str){if(!str)return 0;var p=str.split(':').map(Number);if(p.length===3)return p[0]*3600+p[1]*60+p[2];if(p.length===2)return p[0]*60+p[1];return parseInt(str)||0;}
 function addLog(txt,type){var l=document.getElementById('logBox');var d=document.createElement('div');d.className='ll '+(type||'');d.textContent='> '+txt;l.appendChild(d);l.scrollTop=l.scrollHeight;document.getElementById('loadStep').textContent=txt;}
 function showErr(msg){var b=document.getElementById('errBox');b.className='err-box show';document.getElementById('errMsg').textContent=msg;}
 function clearErr(){document.getElementById('errBox').className='err-box';}
