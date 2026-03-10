@@ -6,6 +6,7 @@
 <title>CLIPD</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+<script src="https://player.twitch.tv/js/embed/v1.js"></script>
 <style>
 :root{--bg:#08060f;--s1:#0f0c1a;--s2:#161224;--border:#1e1830;--ac:#9147ff;--a2:#00f5d4;--hot:#ff4500;--text:#edeaf7;--mu:#5a5070;--danger:#ef4444}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -211,9 +212,13 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 
 /* VIDEO PREVIEW */
 .preview-wrap{position:relative;background:#000;border:1px solid var(--border);margin-bottom:14px;overflow:hidden}
-.preview-16-9{aspect-ratio:16/9;width:100%}
-.preview-9-16{width:180px;aspect-ratio:9/16;margin:0 auto;position:relative;overflow:hidden;border:2px solid var(--ac)}
-.preview-9-16 iframe{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(1.8);width:100%;height:100%}
+.preview-16-9{position:relative;aspect-ratio:16/9;width:100%}
+.preview-16-9 iframe{width:100%;height:100%;display:block}
+.preview-9-16-wrap{display:none;justify-content:center;align-items:center;background:#000;padding:20px 0;position:relative}
+.preview-9-16{width:200px;aspect-ratio:9/16;position:relative;overflow:hidden;border:2px solid var(--ac);flex-shrink:0}
+.preview-9-16 iframe{position:absolute;top:0;left:50%;transform:translateX(-50%);width:300%;height:100%;pointer-events:none}
+.cap-overlay{position:absolute;bottom:10%;left:0;right:0;text-align:center;pointer-events:none;padding:0 6px;z-index:5}
+.cap-overlay span{display:inline-block;font-family:'DM Sans',sans-serif;font-weight:700;font-size:14px;padding:4px 10px;border-radius:2px}
 .crop-toggle{display:flex;gap:4px;margin-bottom:10px}
 .ct-btn{font-family:'Space Mono',monospace;font-size:10px;padding:5px 12px;border:1px solid var(--border);color:var(--mu);cursor:pointer;background:none;transition:all .15s}
 .ct-btn.active{border-color:var(--ac);color:var(--ac);background:rgba(145,71,255,.08)}
@@ -241,8 +246,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .caption-item input:focus{border-color:var(--ac)}
 .caption-item button{background:none;border:none;color:var(--mu);cursor:pointer;font-size:14px;padding:4px}
 .caption-item button:hover{color:var(--danger)}
-.caption-overlay{position:absolute;bottom:12%;left:0;right:0;text-align:center;pointer-events:none;padding:0 8px}
-.caption-text{display:inline-block;background:rgba(0,0,0,.85);color:#fff;font-family:'DM Sans',sans-serif;font-weight:700;font-size:clamp(10px,2vw,18px);padding:4px 10px;border-radius:2px;letter-spacing:.5px}
+
 
 /* STYLE PANEL */
 .style-section{}
@@ -441,15 +445,18 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       </div>
 
       <div class="preview-wrap" id="previewWrap">
+        <!-- 16:9 view -->
         <div class="preview-16-9" id="preview169">
-          <iframe id="twitchPlayer" src="" width="100%" height="100%" allowfullscreen frameborder="0"></iframe>
-          <div class="caption-overlay" id="captionOverlay916" style="display:none"><span class="caption-text" id="captionPreviewText"></span></div>
+          <div id="twitchPlayerDiv" style="width:100%;height:100%"></div>
+          <div class="cap-overlay" id="capOverlay169"><span id="capText169"></span></div>
         </div>
-        <div class="preview-9-16" id="preview916" style="display:none">
-          <iframe id="twitchPlayer916" src="" width="100%" height="100%" allowfullscreen frameborder="0"></iframe>
-          <div class="caption-overlay"><span class="caption-text" id="captionPreviewText916"></span></div>
+        <!-- 9:16 view -->
+        <div class="preview-9-16-wrap" id="preview916">
+          <div class="preview-9-16">
+            <div id="twitchPlayerDiv916" style="width:100%;height:100%"></div>
+            <div class="cap-overlay"><span id="capText916"></span></div>
+          </div>
         </div>
-        <div class="caption-overlay" id="captionOverlay169"><span class="caption-text" id="captionPreviewText169"></span></div>
       </div>
 
       <div class="trim-section">
@@ -1341,33 +1348,7 @@ function openEditor(idx){
 
   // Load Twitch player — handle VOD, live, and existing clips
   var vodId = clip.vodTwitchId || '';
-  var playerUrl = '';
-  if(clip.originalClipUrl && clip.twitchClipId){
-    // Existing clip mode — embed the actual Twitch clip
-    playerUrl = 'https://clips.twitch.tv/embed?clip='+clip.twitchClipId+'&parent='+window.location.hostname+'&autoplay=false';
-    // Pre-fill the clip link since we already have it
-    document.getElementById('clipLinkBox').style.display = 'block';
-    document.getElementById('clipLinkUrl').textContent = clip.originalClipUrl;
-    document.getElementById('clipLinkUrl').href = clip.originalClipUrl;
-    var createBtn = document.getElementById('createClipBtn');
-    createBtn.textContent = '✓ CLIP ALREADY EXISTS';
-    createBtn.style.background = 'var(--s2)';
-    createBtn.style.color = 'var(--mu)';
-    createBtn.style.border = '1px solid var(--border)';
-    createBtn.disabled = true;
-  } else if(currentVodData && currentVodData.isLive){
-    // Live mode — embed the live channel
-    playerUrl = 'https://player.twitch.tv/?channel='+currentVodData.user_name+'&parent='+window.location.hostname+'&autoplay=false';
-    var createBtn = document.getElementById('createClipBtn');
-    createBtn.textContent = '🔴 CLIP THIS MOMENT NOW';
-    createBtn.style.background = '#ff4500';
-  } else if(vodId){
-    playerUrl = 'https://player.twitch.tv/?video='+vodId+'&t='+fts(startSec)+'&autoplay=false&parent='+window.location.hostname;
-  }
-  if(playerUrl){
-    document.getElementById('twitchPlayer').src = playerUrl;
-    document.getElementById('twitchPlayer916').src = playerUrl;
-  }
+  loadTwitchPlayer(clip, vodId, startSec);
 
   // Default caption = clip title
   captions = [{time:'0:00', text: clip.title}];
@@ -1388,11 +1369,73 @@ function openEditor(idx){
   document.getElementById('clipLinkBox').style.display = 'none';
 }
 
+// Twitch Player instances
+var twitchPlayerInst = null;
+
+function loadTwitchPlayer(clip, vodId, startSec){
+  // Destroy existing players
+  var d1 = document.getElementById('twitchPlayerDiv');
+  var d2 = document.getElementById('twitchPlayerDiv916');
+  d1.innerHTML = '';
+  d2.innerHTML = '';
+  twitchPlayerInst = null;
+
+  var opts = {width:'100%', height:'100%', autoplay:false, parent:[window.location.hostname]};
+
+  if(clip.originalClipUrl && clip.twitchClipId){
+    // Existing Twitch clip
+    opts.clip = clip.twitchClipId;
+    document.getElementById('clipLinkBox').style.display = 'block';
+    document.getElementById('clipLinkUrl').textContent = clip.originalClipUrl;
+    document.getElementById('clipLinkUrl').href = clip.originalClipUrl;
+    var createBtn = document.getElementById('createClipBtn');
+    createBtn.textContent = '✓ CLIP ALREADY EXISTS';
+    createBtn.style.background = 'var(--s2)';
+    createBtn.style.color = 'var(--mu)';
+    createBtn.style.border = '1px solid var(--border)';
+    createBtn.disabled = true;
+  } else if(currentVodData && currentVodData.isLive){
+    // Live channel
+    opts.channel = currentVodData.user_name;
+    var createBtn = document.getElementById('createClipBtn');
+    createBtn.textContent = '🔴 CLIP THIS MOMENT NOW';
+    createBtn.style.background = '#ff4500';
+    createBtn.style.color = '#fff';
+    createBtn.style.border = 'none';
+    createBtn.disabled = false;
+  } else if(vodId){
+    // VOD at specific timestamp
+    opts.video = vodId;
+  } else {
+    d1.innerHTML = '<div style="color:#5a5070;font-size:10px;padding:20px;text-align:center">No video available</div>';
+    return;
+  }
+
+  try {
+    twitchPlayerInst = new Twitch.Player('twitchPlayerDiv', opts);
+    // Seek to timestamp after VOD loads
+    if(opts.video && startSec > 0){
+      twitchPlayerInst.addEventListener(Twitch.Player.READY, function(){
+        twitchPlayerInst.seek(startSec);
+      });
+    }
+    // Mirror to 9:16 div with same options
+    var opts2 = Object.assign({}, opts, {width:'100%', height:'100%'});
+    new Twitch.Player('twitchPlayerDiv916', opts2);
+  } catch(e) {
+    d1.innerHTML = '<div style="color:#5a5070;font-size:10px;padding:20px;text-align:center">Player unavailable</div>';
+  }
+}
+
 function closeEditor(){
   document.getElementById('editorOverlay').classList.remove('open');
   document.body.style.overflow = '';
-  document.getElementById('twitchPlayer').src = '';
-  document.getElementById('twitchPlayer916').src = '';
+  // Destroy players
+  var d1 = document.getElementById('twitchPlayerDiv');
+  var d2 = document.getElementById('twitchPlayerDiv916');
+  if(d1) d1.innerHTML = '';
+  if(d2) d2.innerHTML = '';
+  twitchPlayerInst = null;
 }
 
 function setCrop(mode){
@@ -1400,7 +1443,8 @@ function setCrop(mode){
   document.getElementById('crop169').className = 'ct-btn'+(mode==='16:9'?' active':'');
   document.getElementById('crop916').className = 'ct-btn'+(mode==='9:16'?' active':'');
   document.getElementById('preview169').style.display = mode==='16:9'?'block':'none';
-  document.getElementById('preview916').style.display = mode==='9:16'?'flex':'none';
+  var p916 = document.getElementById('preview916');
+  p916.style.display = mode==='9:16'?'flex':'none';
 }
 
 // TRIM
@@ -1481,16 +1525,16 @@ function removeCaption(i){
 function updateCaptionPreview(){
   var txt = captions.length?captions[0].text:'';
   var styles = {
-    bold: 'background:rgba(0,0,0,.85);color:'+capColor+';font-weight:700;padding:4px 10px',
+    bold: 'background:rgba(0,0,0,.85);color:'+capColor+';font-weight:700;padding:4px 10px;border-radius:2px',
     outline: 'background:transparent;color:'+capColor+';font-weight:700;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;padding:4px 10px',
-    highlight: 'background:'+capColor+';color:#000;font-weight:700;padding:4px 10px',
+    highlight: 'background:'+capColor+';color:#000;font-weight:700;padding:4px 10px;border-radius:2px',
     minimal: 'background:transparent;color:'+capColor+';font-weight:400;padding:4px 10px'
   };
   var style = styles[capStyle]||styles.bold;
-  document.getElementById('captionPreviewText169').textContent = txt;
-  document.getElementById('captionPreviewText169').style.cssText = style;
-  document.getElementById('captionPreviewText916').textContent = txt;
-  document.getElementById('captionPreviewText916').style.cssText = style;
+  var t169 = document.getElementById('capText169');
+  var t916 = document.getElementById('capText916');
+  if(t169){t169.textContent=txt; t169.style.cssText=style;}
+  if(t916){t916.textContent=txt; t916.style.cssText=style;}
 }
 
 function setCapStyle(style, el){
