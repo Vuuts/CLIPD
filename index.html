@@ -695,7 +695,7 @@ async function analyze(){
   allClips=[];
 
   try{
-    if(!twitchToken){
+    if(!twitchToken && !twitchClientId){
       throw new Error('Twitch credentials required. Click SETUP KEYS above.');
     }
 
