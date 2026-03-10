@@ -551,7 +551,7 @@ function updateCredsUI(ok){
 async function getToken(id,secret){
   if(!secret) return 'no-secret';
   try{
-    var r = await fetch('https://corsproxy.io/?https://id.twitch.tv/oauth2/token',{
+    var r = await fetch('https://twitch-proxy.igregg96.workers.dev/',{
       method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
       body:'client_id='+encodeURIComponent(id)+'&client_secret='+encodeURIComponent(secret)+'&grant_type=client_credentials'
     });
