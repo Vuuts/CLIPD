@@ -13,6 +13,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(145,71,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(145,71,255,.04) 1px,transparent 1px);background-size:64px 64px;pointer-events:none;z-index:0}
 .page{display:none;position:relative;z-index:1}
 .page.active{display:block}
+#authPage{display:none}
+#authPage.active{display:flex}
 
 /* AUTH */
 #authPage{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
@@ -399,8 +401,12 @@ function showAuth(){
 
 function bootApp(user){
   currentUser = user;
-  document.getElementById('authPage').classList.remove('active');
-  document.getElementById('appPage').classList.add('active');
+  var authPage = document.getElementById('authPage');
+  var appPage = document.getElementById('appPage');
+  authPage.classList.remove('active');
+  authPage.style.display = 'none';
+  appPage.classList.add('active');
+  appPage.style.display = 'block';
   document.getElementById('navEmail').textContent = user.email.split('@')[0].toUpperCase();
   showView('dash');
   loadDashboard();
