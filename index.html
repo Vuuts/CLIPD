@@ -673,7 +673,7 @@ async function callClaude(vod,spikes,buckets,durSec,msgs){
   }
   var prompt='You are an expert Twitch VOD analyst. Analyze this stream and identify the best clip moments.\n\nStream: "'+vod.title+'" by '+vod.user_name+'\nGame: '+(vod.game_name||'Unknown')+'\nDuration: '+vod.duration+'\nViews: '+vod.view_count+'\n\nChat spikes (where chat went crazy):\n'+JSON.stringify(sData)+'\n\n'+sample+'\n\nGenerate 5 clip suggestions anchored to the spike timestamps.\n\nRespond ONLY with valid JSON (no markdown, no backticks):\n{"summary":"2-3 sentence stream analysis","clips":[{"type":"hype|funny|info|rage","score":92,"timestamp":"1:23:45","duration":"0:45","title":"Short punchy title","tags":["TAG1","TAG2"],"bg":"purple|teal|orange|blue","chat_intensity":85}]}';
 
-  var r=await fetch('https://api.anthropic.com/v1/messages',{
+  var r=await fetch('https://twitch-proxy.igregg96.workers.dev/claude',{
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})
   });
